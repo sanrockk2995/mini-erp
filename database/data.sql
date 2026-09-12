@@ -60,14 +60,20 @@ INSERT INTO users (id, username, email, password_hash, full_name, phone, status)
 (2, 'sales_user', 'sales@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Trần Bán Hàng', '0912345678', 'ACTIVE'),
 (3, 'purchase_user', 'purchase@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Lê Mua Hàng', '0923456789', 'ACTIVE'),
 (4, 'warehouse_user', 'warehouse@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Phạm Thủ Kho', '0934567890', 'ACTIVE'),
-(5, 'accountant_user', 'accountant@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Hoàng Kế Toán', '0945678901', 'ACTIVE');
+(5, 'accountant_user', 'accountant@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Hoàng Kế Toán', '0945678901', 'ACTIVE'),
+(10, 'sales', 'sales_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Trần Bán Hàng', '0912345678', 'ACTIVE'),
+(11, 'purchasing', 'purchasing_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Lê Mua Hàng', '0923456789', 'ACTIVE'),
+(12, 'warehouse', 'warehouse_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Phạm Thủ Kho', '0934567890', 'ACTIVE');
 
 INSERT INTO user_roles (user_id, role_id) VALUES
 (1, 1),
 (2, 2),
 (3, 3),
 (4, 4),
-(5, 5);
+(5, 5),
+(10, 2),
+(11, 3),
+(12, 4);
 
 -- 3. WAREHOUSES
 INSERT INTO warehouses (id, code, name, address, manager_name, phone, is_active) VALUES

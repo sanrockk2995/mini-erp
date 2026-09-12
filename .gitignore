@@ -33,3 +33,4 @@ yarn-error.log*
 .env
 .env.local
 *.log
+.erp_running_pids

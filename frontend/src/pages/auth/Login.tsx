@@ -183,7 +183,7 @@ export const Login: React.FC = () => {
               form={form}
               layout="vertical"
               onFinish={handleLogin}
-              initialValues={{ username: 'admin', password: '1' }}
+              initialValues={{ username: 'admin', password: '123456' }}
               requiredMark={false}
             >
               <Form.Item

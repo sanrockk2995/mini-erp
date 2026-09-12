@@ -99,10 +99,10 @@ Hệ thống đã nạp sẵn các tài khoản phân quyền RBAC để kiểm 
 
 | Tên đăng nhập | Mật khẩu | Họ và tên | Phân quyền (Roles) | Mô tả vai trò |
 |---|---|---|---|---|
-| **`admin`** | `1` | Quản trị Hệ thống | `ADMIN`, `SALES`, `PURCHASING`, `WAREHOUSE`, `ACCOUNTANT` | Toàn quyền kiểm soát toàn hệ thống |
-| **`sales`** | `1` | Nhân viên Kinh doanh | `SALES` | Quản lý khách hàng, lập & theo dõi đơn đặt hàng bán |
-| **`purchasing`** | `1` | Nhân viên Mua hàng | `PURCHASING` | Quản lý NCC, chấm điểm, lập đơn mua PO |
-| **`warehouse`** | `1` | Thủ kho Quản lý | `WAREHOUSE` | Quản lý tồn kho, xác nhận phiếu nhập GRN, phiếu xuất GIN, sổ cái |
+| **`admin`** | `123456` | Quản trị Hệ thống | `ADMIN`, `SALES`, `PURCHASING`, `WAREHOUSE`, `ACCOUNTANT` | Toàn quyền kiểm soát toàn hệ thống |
+| **`sales`** | `123456` | Nhân viên Kinh doanh | `SALES` | Quản lý khách hàng, lập & theo dõi đơn đặt hàng bán |
+| **`purchasing`** | `123456` | Nhân viên Mua hàng | `PURCHASING` | Quản lý NCC, chấm điểm, lập đơn mua PO |
+| **`warehouse`** | `123456` | Thủ kho Quản lý | `WAREHOUSE` | Quản lý tồn kho, xác nhận phiếu nhập GRN, phiếu xuất GIN, sổ cái |
 
 *(Trên màn hình Đăng nhập `/login`, có sẵn 4 nút bấm điền nhanh tài khoản kiểm thử).*
 
@@ -110,44 +110,58 @@ Hệ thống đã nạp sẵn các tài khoản phân quyền RBAC để kiểm 
 
 ## 🚀 5. Hướng dẫn Cài đặt & Chạy Dự án
 
-### Cách 1: Chạy trực tiếp qua Docker Compose (Khuyên dùng)
+### Cách 1: Chạy tự động với Script `run.sh` (Nhanh nhất & Đơn giản nhất)
+
+Script [run.sh](file:///home/sanrockk/mini-erp/run.sh) tự động dò tìm môi trường (Java 17, Maven, Node.js), dọn dẹp port cũ, biên dịch và chạy đồng thời Backend (8080) và Frontend (3000):
+
+```bash
+# Khởi chạy toàn bộ hệ thống (Backend + Frontend)
+bash run.sh
+
+# Hoặc dùng các lệnh quản trị:
+bash run.sh status    # Kiểm tra trạng thái hoạt động của Backend & Frontend
+bash run.sh test      # Chạy bộ kiểm thử tự động toàn diện
+bash run.sh logs      # Xem realtime log của Backend và Frontend
+bash run.sh stop      # Dừng toàn bộ hệ thống
+bash run.sh restart   # Khởi động lại hệ thống
+bash run.sh docker    # Khởi chạy qua Docker Compose
+```
+
+### Cách 2: Chạy trực tiếp qua Docker Compose
 
 Yêu cầu: Đã cài đặt **Docker** và **Docker Compose**.
 
-1. Mở Terminal tại thư mục gốc của dự án `D:\AI\ERP`:
 ```bash
 docker compose up --build -d
 ```
-2. Kiểm tra trạng thái các container:
-```bash
-docker compose ps
-```
-3. Truy cập hệ thống:
-   - **Giao diện người dùng (Frontend)**: [http://localhost](http://localhost) (hoặc [http://localhost:3000](http://localhost:3000))
-   - **API Backend**: [http://localhost:8080](http://localhost:8080)
-   - **Tài liệu Swagger UI**: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+
+Truy cập hệ thống:
+- **Giao diện người dùng (Frontend)**: [http://localhost:3000](http://localhost:3000) (hoặc [http://localhost](http://localhost))
+- **API Backend RESTful**: [http://localhost:8080/api](http://localhost:8080/api)
+- **Tài liệu Swagger UI**: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- **OpenAPI JSON Docs**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
 ---
 
-### Cách 2: Chạy trực tiếp trong môi trường Phát triển (Native Development)
+### Cách 3: Chạy thủ công trong môi trường Phát triển (Native Development)
 
 #### Bước 1: Khởi động Backend Spring Boot
 Yêu cầu: **JDK 17+** và **Maven 3.8+**.
 ```bash
-cd D:\AI\ERP\backend
-mvn clean compile
-mvn spring-boot:run
+cd backend
+mvn clean package -DskipTests
+java -jar target/mini-erp-backend-1.0.0.jar
 ```
 Backend sẽ khởi chạy tại cổng `8080`, kết nối trực tiếp đến database MySQL `10.216.1.218:3306`.
 
 #### Bước 2: Khởi động Frontend React Vite
 Yêu cầu: **Node.js 18+** và **npm**.
 ```bash
-cd D:\AI\ERP\frontend
+cd frontend
 npm install
 npm run dev
 ```
-Frontend sẽ chạy tại [http://localhost:5173](http://localhost:5173). Vite đã cấu hình proxy `/api` sang `http://localhost:8080`.
+Frontend sẽ chạy tại [http://localhost:3000](http://localhost:3000). Vite đã cấu hình proxy `/api` sang `http://localhost:8080`.
 
 ---
 

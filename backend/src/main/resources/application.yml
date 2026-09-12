@@ -35,7 +35,7 @@ app:
     expiration-ms: 86400000 # 24 hours
     refresh-expiration-ms: 604800000 # 7 days
   cors:
-    allowed-origins: "http://localhost:5173,http://localhost:3000,http://localhost:80,http://127.0.0.1:5173"
+    allowed-origins: "http://localhost:5173,http://localhost:3000,http://localhost:80,http://127.0.0.1:5173,http://127.0.0.1:3000,https://erp.hoanguyendev.id.vn,http://erp.hoanguyendev.id.vn,https://*.hoanguyendev.id.vn,http://*.hoanguyendev.id.vn"
 
 springdoc:
   api-docs:

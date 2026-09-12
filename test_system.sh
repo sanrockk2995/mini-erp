@@ -27,7 +27,7 @@ echo -e "\n2. Kiem tra Xac thuc & Cap phat JWT Token:"
 # Login Admin
 LOGIN_RESP=$(curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/json; charset=utf-8" \
-  -d '{"username": "admin", "password": "1"}')
+  -d '{"username": "admin", "password": "123456"}')
 ADMIN_TOKEN=$(echo "$LOGIN_RESP" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
 
 if [ -n "$ADMIN_TOKEN" ]; then
@@ -40,7 +40,7 @@ fi
 # Login Sales
 SALES_RESP=$(curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/json; charset=utf-8" \
-  -d '{"username": "sales", "password": "1"}')
+  -d '{"username": "sales", "password": "123456"}')
 SALES_TOKEN=$(echo "$SALES_RESP" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
 if [ -n "$SALES_TOKEN" ]; then
   echo -e "${GREEN}✓ Dang nhap Sales Staff thanh cong${NC}"
@@ -49,7 +49,7 @@ fi
 # Login Purchasing
 PURCH_RESP=$(curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/json; charset=utf-8" \
-  -d '{"username": "purchasing", "password": "1"}')
+  -d '{"username": "purchasing", "password": "123456"}')
 PURCH_TOKEN=$(echo "$PURCH_RESP" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
 if [ -n "$PURCH_TOKEN" ]; then
   echo -e "${GREEN}✓ Dang nhap Purchasing Staff thanh cong${NC}"
@@ -58,7 +58,7 @@ fi
 # Login Warehouse
 WH_RESP=$(curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/json; charset=utf-8" \
-  -d '{"username": "warehouse", "password": "1"}')
+  -d '{"username": "warehouse", "password": "123456"}')
 WH_TOKEN=$(echo "$WH_RESP" | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
 if [ -n "$WH_TOKEN" ]; then
   echo -e "${GREEN}✓ Dang nhap Warehouse Staff thanh cong${NC}"
