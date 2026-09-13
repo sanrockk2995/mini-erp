@@ -4,7 +4,12 @@ import { ApiResponse, PageResponse, Category, Product, PriceList } from '../type
 export const productService = {
   // Categories
   getCategoryTree: async (activeOnly = false) => {
-    const res = await api.get<ApiResponse<Category[]>>('/categories', { params: { activeOnly } });
+    const res = await api.get<ApiResponse<Category[]>>('/categories/tree', { params: { activeOnly } });
+    return res.data.data;
+  },
+
+  getAllCategoriesFlat: async () => {
+    const res = await api.get<ApiResponse<Category[]>>('/categories');
     return res.data.data;
   },
 

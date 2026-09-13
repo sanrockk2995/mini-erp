@@ -29,16 +29,41 @@ export const CategoryTreePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [form] = Form.useForm();
+
+  const cleanTreeData = (items: Category[]): Category[] => {
+    return items.map((item) => ({
+      ...item,
+      children: item.children && item.children.length > 0 ? cleanTreeData(item.children) : undefined,
+    }));
+  };
+
+  const countTotal = (items: Category[]): number => {
+    return items.reduce((acc, curr) => acc + 1 + (curr.children ? countTotal(curr.children) : 0), 0);
+  };
+
+  const getAllParentKeys = (items: Category[]): React.Key[] => {
+    let keys: React.Key[] = [];
+    items.forEach((item) => {
+      if (item.children && item.children.length > 0) {
+        keys.push(item.id);
+        keys = keys.concat(getAllParentKeys(item.children));
+      }
+    });
+    return keys;
+  };
 
   const fetchCategories = async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await productService.getCategoryTree(false);
-      setCategories(data);
+      const cleaned = cleanTreeData(data);
+      setCategories(cleaned);
+      setExpandedRowKeys(getAllParentKeys(cleaned));
     } catch (err: any) {
       setError(err?.message || 'Không thể tải danh mục sản phẩm. Vui lòng kiểm tra kết nối.');
       message.error('Không thể tải danh mục sản phẩm');
@@ -219,12 +244,29 @@ export const CategoryTreePage: React.FC = () => {
         title="Danh mục Ngành hàng"
         subtitle="Cấu trúc phân cấp ngành hàng đa cấp phục vụ phân loại và báo cáo doanh số"
         tag={
-          <Tag color="purple" style={{ borderRadius: 4, fontWeight: 600 }}>
-            {categories.length} Nhánh gốc
-          </Tag>
+          <Space>
+            <Tag color="purple" style={{ borderRadius: 4, fontWeight: 600 }}>
+              {categories.length} Nhánh gốc
+            </Tag>
+            <Tag color="blue" style={{ borderRadius: 4, fontWeight: 600 }}>
+              {countTotal(categories)} Tổng danh mục
+            </Tag>
+          </Space>
         }
         extra={
           <Space>
+            <Button
+              onClick={() => {
+                if (expandedRowKeys.length > 0) {
+                  setExpandedRowKeys([]);
+                } else {
+                  setExpandedRowKeys(getAllParentKeys(categories));
+                }
+              }}
+              style={{ borderRadius: 6 }}
+            >
+              {expandedRowKeys.length > 0 ? 'Thu gọn tất cả' : 'Mở rộng tất cả'}
+            </Button>
             <Button icon={<ReloadOutlined />} onClick={fetchCategories} loading={loading} style={{ borderRadius: 6 }}>
               Làm mới
             </Button>
@@ -270,7 +312,10 @@ export const CategoryTreePage: React.FC = () => {
           loading={loading}
           pagination={false}
           size="middle"
-          expandable={{ defaultExpandAllRows: true }}
+          expandable={{
+            expandedRowKeys,
+            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as React.Key[]),
+          }}
           scroll={{ x: 850 }}
         />
       </div>
