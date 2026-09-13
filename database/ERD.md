@@ -83,20 +83,35 @@ erDiagram
 | 27 | `goods_issue_notes` | Kho | Phiếu xuất kho (tự động sinh khi duyệt SO hoặc xuất khác) |
 | 28 | `goods_issue_items` | Kho | Dòng chi tiết hàng thực xuất khỏi kho |
 
-## 3. Kiến trúc Tối giản: Zero-FK & Zero-Join Flat Read Model
+## 3. Kiến trúc Cân bằng: Core-FK (Khóa ngoại Cốt lõi) & Flat Read Model
 
-Nhằm đáp ứng yêu cầu **"giảm tải liên kết bảng và cấu trúc bảng hết mức"**, kiến trúc cơ sở dữ liệu đã được tinh gọn triệt để:
+Nhằm đáp ứng yêu cầu **giữ lại các liên kết chính để đảm bảo toàn vẹn dữ liệu, đồng thời tối ưu giảm tải truy vấn**, kiến trúc cơ sở dữ liệu kết hợp hài hòa giữa 2 cơ chế:
 
-### 3.1. Zero Database-Level Foreign Keys (Không ràng buộc FK cứng)
-- Toàn bộ 28 bảng **không có bất kỳ khóa ngoại vật lý nào (`CONSTRAINT fk_...`)** ở tầng MySQL Engine.
-- Toàn vẹn tham chiếu và tính hợp lệ logic nghiệp vụ được ủy quyền 100% cho tầng ứng dụng Spring Data JPA xử lý.
-- **Lợi ích**:
-  - Loại bỏ hoàn toàn Foreign Key Lock Contention khi nhiều luồng thực hiện Insert/Update/Delete đồng thời.
-  - Tăng tốc độ ghi (throughput) vượt trội khi import/export dữ liệu lớn.
-  - Phù hợp với kiến trúc mở rộng phân tán, Sharding hoặc tách Microservices trong tương lai.
+### 3.1. Core-FK Constraints (Bảo vệ Toàn vẹn Dữ liệu Cốt lõi)
+Hệ thống duy trì **37 ràng buộc Khóa ngoại vật lý (`CONSTRAINT fk_...`)** trực tiếp trong InnoDB MySQL Engine:
+1. **Quan hệ Master - Detail (Xóa theo tầng - ON DELETE CASCADE)**:
+   - `sales_order_items` → `sales_orders`: Xóa đơn hàng tự động dọn sạch các dòng chi tiết.
+   - `purchase_order_items` → `purchase_orders`: Xóa PO tự động dọn sạch các dòng đặt mua.
+   - `goods_receipt_items` → `goods_receipt_notes`: Xóa phiếu nhập kho tự động xóa các dòng hàng thực nhận.
+   - `goods_issue_items` → `goods_issue_notes`: Xóa phiếu xuất kho tự động xóa các dòng hàng thực xuất.
+   - `price_list_items` → `price_lists`: Xóa bảng giá tự động xóa các mục giá SP.
+   - `product_attributes` → `products`: Xóa sản phẩm tự động dọn sạch thuộc tính Size/Màu.
+   - `supplier_reviews` → `suppliers`: Xóa nhà cung cấp tự động xóa lịch sử đánh giá.
+   - `sales_order_status_history` → `sales_orders`: Xóa đơn tự động dọn audit log.
+   - `user_roles` → `users`, `roles` & `role_permissions` → `roles`, `permissions`: RBAC phân quyền bảo toàn khi thêm/xóa tài khoản.
+2. **Quan hệ Tham chiếu Nghiệp vụ (Ngăn xóa dữ liệu đang dùng - ON DELETE RESTRICT)**:
+   - `inventory` → `warehouses`, `products`: Ngăn xóa kho hoặc sản phẩm khi đang có dữ liệu tồn kho.
+   - `stock_ledger` → `warehouses`, `products`: Ngăn xóa kho/sản phẩm đã phát sinh biến động sổ cái.
+   - `sales_orders` → `customers`, `warehouses`: Ngăn xóa khách hàng/kho khi có đơn hàng liên quan.
+   - `purchase_orders` → `suppliers`, `warehouses`: Ngăn xóa NCC/kho khi có đơn mua hàng liên quan.
+   - `supplier_debts` → `suppliers` & `supplier_payments` → `supplier_debts`, `suppliers`: Đảm bảo an toàn tài chính công nợ.
+3. **Quan hệ Tùy chọn (ON DELETE SET NULL)**:
+   - `categories.parent_id`: Phân cấp cây danh mục tự do.
+   - `customers.group_id`, `price_lists.customer_group_id`.
+   - `goods_receipt_notes.po_id`, `goods_issue_notes.so_id`, `supplier_debts.po_id`.
 
-### 3.2. Zero-Join Flat Read Model (Denormalization - Đọc dữ liệu phẳng không cần JOIN)
-- Các trường hiển thị thường dùng được nhúng trực tiếp (*denormalized*) vào các bảng giao dịch và kho vận:
+### 3.2. Flat Read Model (Denormalization - Đọc dữ liệu phẳng hạn chế JOIN)
+- Mặc dù có khóa ngoại để bảo vệ toàn vẹn ghi, các trường hiển thị quan trọng vẫn được lưu trữ trực tiếp (*denormalized*) vào các bảng giao dịch:
   - `sales_orders`: Mang trực tiếp `customer_code`, `customer_name`, `customer_phone`, `warehouse_code`, `warehouse_name`.
   - `sales_order_items`: Mang trực tiếp `product_sku`, `product_name`, `product_unit`.
   - `purchase_orders`: Mang trực tiếp `supplier_code`, `supplier_name`, `warehouse_code`, `warehouse_name`.
@@ -106,11 +121,10 @@ Nhằm đáp ứng yêu cầu **"giảm tải liên kết bảng và cấu trúc
   - `goods_receipt_items` & `goods_issue_items`: Mang trực tiếp `product_sku`, `product_name`, `product_unit`.
   - `supplier_debts` & `supplier_payments`: Mang trực tiếp `po_code`, `supplier_name`, `debt_invoice_code`.
 - **Lợi ích**:
-  - Cho phép các câu lệnh `SELECT` truy vấn màn hình danh sách, báo cáo hoặc tìm kiếm chỉ từ **1 bảng duy nhất (Single-Table Query)** mà không cần qua 3–4 bảng `JOIN`.
-  - Triệt tiêu lỗi N+1 Hibernate Lazy Loading khi duyệt danh sách đối tượng.
+  - Khi hiển thị danh sách, phân trang, in phiếu, báo cáo doanh thu/tồn kho: câu lệnh `SELECT` chỉ cần đọc từ **1 bảng duy nhất (Single-Table Query)**, không cần thực hiện nhiều phép `JOIN` tốn kém CPU/RAM.
+  - Vừa giữ được tính toàn vẹn dữ liệu nhờ Core-FK, vừa đạt tốc độ đọc cực nhanh nhờ Flat Read Model.
 
-### 3.3. Tối giản Chỉ mục (Index Pruning)
-- Loại bỏ toàn bộ Secondary Non-Unique Indexes dư thừa trên các cột trạng thái hoặc khóa ngoại.
-- Chỉ giữ lại duy nhất **Primary Keys (`id`)** và **Business Unique Constraints** (`sku`, `order_code`, `po_code`, `grn_code`, `gin_code`, `invoice_code`, `payment_code`, `uk_inv_wh_prod`).
-- **Lợi ích**: Giảm thiểu diện tích lưu trữ B-Tree trong InnoDB Buffer Pool, giảm chi phí Disk I/O khi ghi dữ liệu.
+### 3.3. Tối ưu Chỉ mục (Index Optimization)
+- Duy trì đầy đủ chỉ mục trên các khóa ngoại chính và các trường tra cứu/lọc trạng thái: `idx_so_customer`, `idx_so_status`, `idx_po_supplier`, `idx_po_status`, `idx_grn_po`, `idx_gin_so`, `idx_sd_supplier`, `idx_sd_status`, `idx_sl_wh_prod`.
+- Bảo toàn **Primary Keys (`id`)** và **Business Unique Keys** (`sku`, `order_code`, `po_code`, `grn_code`, `gin_code`, `invoice_code`, `payment_code`, `uk_inv_wh_prod`, `uk_pli_pl_prod`).
 

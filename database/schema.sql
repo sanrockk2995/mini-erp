@@ -2,11 +2,11 @@
 -- MINI-ERP CLOTHING & APPAREL DATABASE SCHEMA (MySQL 8+)
 -- Database: erp_db
 -- Hệ thống Quản trị Doanh nghiệp Dệt may & Bán lẻ Thời trang
--- Kiến trúc: Zero-FK & Zero-Join Flat Read Model
--- Giảm tải liên kết bảng: Tích hợp trường denormalized (tên khách, tên NCC,
--- tên kho, SKU, tên SP) vào các bảng giao dịch để đọc 0-JOIN.
--- Giảm tải cấu trúc bảng: Tối giản kiểu dữ liệu, loại bỏ index phụ dư thừa,
--- toàn vẹn nghiệp vụ và quan hệ được quản trị ở tầng Spring Data JPA.
+-- Kiến trúc: Core-FK (Ràng buộc Khóa ngoại Cốt lõi) & Flat Read Model
+-- Giữ các liên kết chính: RBAC, Cây danh mục, Chi tiết dòng đơn hàng,
+-- Tồn kho, Sổ cái, Đơn mua, Công nợ, Nhập/Xuất kho.
+-- Tối ưu truy vấn: Lưu trữ denormalized (tên khách, tên NCC, tên kho,
+-- SKU, tên SP) để truy vấn danh sách/báo cáo phẳng, nhanh, hạn chế JOIN.
 -- ====================================================================
 
 SET NAMES utf8mb4;
@@ -57,7 +57,8 @@ CREATE TABLE users (
     phone VARCHAR(20),
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_users_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE roles (
@@ -80,13 +81,17 @@ CREATE TABLE permissions (
 CREATE TABLE user_roles (
     user_id BIGINT NOT NULL,
     role_id BIGINT NOT NULL,
-    PRIMARY KEY (user_id, role_id)
+    PRIMARY KEY (user_id, role_id),
+    CONSTRAINT fk_ur_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ur_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE role_permissions (
     role_id BIGINT NOT NULL,
     permission_id BIGINT NOT NULL,
-    PRIMARY KEY (role_id, permission_id)
+    PRIMARY KEY (role_id, permission_id),
+    CONSTRAINT fk_rp_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rp_perm FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
@@ -101,7 +106,9 @@ CREATE TABLE categories (
     sort_order INT NOT NULL DEFAULT 0,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_cat_parent FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL,
+    INDEX idx_cat_parent (parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE products (
@@ -117,14 +124,18 @@ CREATE TABLE products (
     description TEXT,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_prod_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+    INDEX idx_prod_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE product_attributes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     product_id BIGINT NOT NULL,
     attr_key VARCHAR(50) NOT NULL,   -- Size, Màu sắc, Chất liệu, Form dáng
-    attr_value VARCHAR(255) NOT NULL
+    attr_value VARCHAR(255) NOT NULL,
+    CONSTRAINT fk_attr_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    INDEX idx_attr_product (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
@@ -154,7 +165,9 @@ CREATE TABLE customers (
     group_name VARCHAR(100),
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_cust_group FOREIGN KEY (group_id) REFERENCES customer_groups(id) ON DELETE SET NULL,
+    INDEX idx_cust_group (group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE price_lists (
@@ -166,7 +179,9 @@ CREATE TABLE price_lists (
     end_date DATE,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_pl_group FOREIGN KEY (customer_group_id) REFERENCES customer_groups(id) ON DELETE SET NULL,
+    INDEX idx_pl_group (customer_group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE price_list_items (
@@ -174,6 +189,8 @@ CREATE TABLE price_list_items (
     price_list_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     unit_price DECIMAL(15, 2) NOT NULL,
+    CONSTRAINT fk_pli_pricelist FOREIGN KEY (price_list_id) REFERENCES price_lists(id) ON DELETE CASCADE,
+    CONSTRAINT fk_pli_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     UNIQUE KEY uk_pli_pl_prod (price_list_id, product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -207,6 +224,8 @@ CREATE TABLE inventory (
     quantity_available DECIMAL(12, 3) NOT NULL DEFAULT 0.000,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_inv_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_inv_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
     UNIQUE KEY uk_inv_wh_prod (warehouse_id, product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -227,7 +246,10 @@ CREATE TABLE stock_ledger (
     unit_cost DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     notes VARCHAR(255),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by VARCHAR(50) NOT NULL DEFAULT 'SYSTEM'
+    created_by VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
+    CONSTRAINT fk_sl_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_sl_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+    INDEX idx_sl_wh_prod (warehouse_id, product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
@@ -255,7 +277,11 @@ CREATE TABLE sales_orders (
     approved_at TIMESTAMP NULL,
     notes TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_so_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_so_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT,
+    INDEX idx_so_customer (customer_id),
+    INDEX idx_so_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE sales_order_items (
@@ -268,7 +294,10 @@ CREATE TABLE sales_order_items (
     quantity DECIMAL(12, 3) NOT NULL,
     unit_price DECIMAL(15, 2) NOT NULL,
     discount_percent DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
-    line_total DECIMAL(15, 2) NOT NULL
+    line_total DECIMAL(15, 2) NOT NULL,
+    CONSTRAINT fk_soi_order FOREIGN KEY (sales_order_id) REFERENCES sales_orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_soi_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+    INDEX idx_soi_order (sales_order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE sales_order_status_history (
@@ -278,7 +307,9 @@ CREATE TABLE sales_order_status_history (
     to_status VARCHAR(30) NOT NULL,
     note VARCHAR(255),
     changed_by VARCHAR(50) NOT NULL,
-    changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sosh_order FOREIGN KEY (sales_order_id) REFERENCES sales_orders(id) ON DELETE CASCADE,
+    INDEX idx_sosh_order (sales_order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
@@ -311,7 +342,9 @@ CREATE TABLE supplier_reviews (
     average_score DECIMAL(3, 1) NOT NULL,
     reviewer_id BIGINT,
     comments TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sr_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE,
+    INDEX idx_sr_supplier (supplier_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE purchase_orders (
@@ -334,7 +367,11 @@ CREATE TABLE purchase_orders (
     approved_at TIMESTAMP NULL,
     notes TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_po_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_po_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT,
+    INDEX idx_po_supplier (supplier_id),
+    INDEX idx_po_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE purchase_order_items (
@@ -346,7 +383,10 @@ CREATE TABLE purchase_order_items (
     product_unit VARCHAR(20) DEFAULT 'Cái',
     quantity DECIMAL(12, 3) NOT NULL,
     unit_price DECIMAL(15, 2) NOT NULL,
-    line_total DECIMAL(15, 2) NOT NULL
+    line_total DECIMAL(15, 2) NOT NULL,
+    CONSTRAINT fk_poi_order FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_poi_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+    INDEX idx_poi_order (purchase_order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE supplier_debts (
@@ -364,7 +404,11 @@ CREATE TABLE supplier_debts (
     remaining_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     status VARCHAR(20) NOT NULL DEFAULT 'UNPAID',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sd_po FOREIGN KEY (po_id) REFERENCES purchase_orders(id) ON DELETE SET NULL,
+    CONSTRAINT fk_sd_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
+    INDEX idx_sd_supplier (supplier_id),
+    INDEX idx_sd_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE supplier_payments (
@@ -380,7 +424,10 @@ CREATE TABLE supplier_payments (
     reference_number VARCHAR(100),
     notes VARCHAR(255),
     created_by VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sp_debt FOREIGN KEY (debt_id) REFERENCES supplier_debts(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_sp_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
+    INDEX idx_sp_debt (debt_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
@@ -402,7 +449,11 @@ CREATE TABLE goods_receipt_notes (
     confirmed_by VARCHAR(50),
     confirmed_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_grn_po FOREIGN KEY (po_id) REFERENCES purchase_orders(id) ON DELETE SET NULL,
+    CONSTRAINT fk_grn_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT,
+    INDEX idx_grn_po (po_id),
+    INDEX idx_grn_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE goods_receipt_items (
@@ -415,7 +466,10 @@ CREATE TABLE goods_receipt_items (
     ordered_quantity DECIMAL(12, 3) NOT NULL DEFAULT 0.000,
     received_quantity DECIMAL(12, 3) NOT NULL,
     unit_price DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
-    notes VARCHAR(255)
+    notes VARCHAR(255),
+    CONSTRAINT fk_gri_note FOREIGN KEY (grn_id) REFERENCES goods_receipt_notes(id) ON DELETE CASCADE,
+    CONSTRAINT fk_gri_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+    INDEX idx_gri_note (grn_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE goods_issue_notes (
@@ -434,7 +488,11 @@ CREATE TABLE goods_issue_notes (
     confirmed_by VARCHAR(50),
     confirmed_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_gin_so FOREIGN KEY (so_id) REFERENCES sales_orders(id) ON DELETE SET NULL,
+    CONSTRAINT fk_gin_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT,
+    INDEX idx_gin_so (so_id),
+    INDEX idx_gin_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE goods_issue_items (
@@ -446,5 +504,8 @@ CREATE TABLE goods_issue_items (
     product_unit VARCHAR(20) DEFAULT 'Cái',
     requested_quantity DECIMAL(12, 3) NOT NULL,
     issued_quantity DECIMAL(12, 3) NOT NULL,
-    notes VARCHAR(255)
+    notes VARCHAR(255),
+    CONSTRAINT fk_gii_note FOREIGN KEY (gin_id) REFERENCES goods_issue_notes(id) ON DELETE CASCADE,
+    CONSTRAINT fk_gii_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT,
+    INDEX idx_gii_note (gin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
