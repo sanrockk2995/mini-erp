@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini-ERP API Testing Workbench</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --purple: #8b5cf6;
+      --code-bg: #0b1120;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+    header {
+      background: #1e293b; border-bottom: 1px solid var(--card-border); padding: 14px 24px;
+      display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand i { font-size: 24px; color: var(--primary); }
+    .brand h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+    .badge { padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-purple { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
+
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .btn {
+      padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px; border: none; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline { background: transparent; border: 1px solid var(--card-border); color: var(--text-main); }
+    .btn-outline:hover { background: #334155; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    .auth-bar {
+      background: #172033; padding: 10px 24px; border-bottom: 1px solid var(--card-border);
+      display: flex; justify-content: space-between; align-items: center; font-size: 13px;
+    }
+    .role-buttons { display: flex; gap: 8px; align-items: center; }
+    .user-info { display: flex; align-items: center; gap: 10px; }
+
+    .main-container { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 120px); }
+
+    .sidebar {
+      width: 380px; background: #131d31; border-right: 1px solid var(--card-border);
+      overflow-y: auto; display: flex; flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 14px 16px; border-bottom: 1px solid var(--card-border); font-size: 13px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-sub);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .test-list { list-style: none; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .test-item {
+      padding: 10px 14px; border-radius: 6px; cursor: pointer; display: flex;
+      align-items: center; justify-content: space-between; border: 1px solid transparent;
+      transition: all 0.15s; background: rgba(30, 41, 59, 0.4);
+    }
+    .test-item:hover { background: #1e293b; border-color: #334155; }
+    .test-item.active { background: #1e293b; border-color: var(--primary); }
+    .test-item-left { display: flex; align-items: center; gap: 10px; }
+    .method-pill {
+      font-size: 10px; font-weight: 800; padding: 3px 6px; border-radius: 4px;
+      min-width: 44px; text-align: center;
+    }
+    .method-get { background: #065f46; color: #34d399; }
+    .method-post { background: #1e40af; color: #93c5fd; }
+    .method-put { background: #92400e; color: #fcd34d; }
+    .method-delete { background: #991b1b; color: #fca5a5; }
+
+    .test-name { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+    .test-endpoint { font-size: 11px; color: var(--text-sub); font-family: monospace; }
+    .test-status-icon { font-size: 14px; }
+    .status-pass { color: var(--success); }
+    .status-fail { color: var(--danger); }
+    .status-idle { color: #64748b; }
+
+    .content-pane { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 20px; gap: 18px; }
+    
+    .panel-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
+      overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .panel-header {
+      padding: 12px 18px; border-bottom: 1px solid var(--card-border); background: #182234;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .panel-title { font-size: 14px; font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
+
+    .url-bar { display: flex; gap: 8px; padding: 16px; background: #1e293b; align-items: center; }
+    .url-input {
+      flex: 1; background: var(--code-bg); border: 1px solid var(--card-border);
+      color: #38bdf8; padding: 10px 14px; border-radius: 6px; font-family: monospace; font-size: 13px;
+    }
+    .url-input:focus { outline: none; border-color: var(--primary); }
+
+    .editor-section { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .section-label { font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; }
+    textarea.code-editor {
+      width: 100%; height: 160px; background: var(--code-bg); border: 1px solid var(--card-border);
+      color: #a5f3fc; padding: 12px; border-radius: 6px; font-family: 'Consolas', 'Fira Code', monospace;
+      font-size: 12px; resize: vertical; outline: none;
+    }
+    pre.response-viewer {
+      background: var(--code-bg); border: 1px solid var(--card-border); border-radius: 6px;
+      padding: 14px; font-family: 'Consolas', 'Fira Code', monospace; font-size: 12px;
+      color: #f1f5f9; overflow-x: auto; max-height: 380px; white-space: pre-wrap; word-break: break-all;
+    }
+
+    .response-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-sub); align-items: center; }
+    .code-200 { color: #34d399; font-weight: 700; }
+    .code-err { color: #f87171; font-weight: 700; }
+
+    .batch-summary {
+      background: #172033; border: 1px solid var(--card-border); border-radius: 8px;
+      padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .summary-metrics { display: flex; gap: 20px; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <i class="fa-solid fa-cubes"></i>
+      <div>
+        <h1>Mini-ERP API Testing Workbench</h1>
+      </div>
+      <span class="badge badge-green"><i class="fa-solid fa-circle-check"></i> Port 7070 Active</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-success" onclick="runAllTests()">
+        <i class="fa-solid fa-play"></i> Chạy Toàn Bộ Test Cases
+      </button>
+      <a href="/swagger-ui/index.html" target="_blank" class="btn btn-outline">
+        <i class="fa-solid fa-file-code"></i> Swagger UI
+      </a>
+      <a href="http://localhost:3000" target="_blank" class="btn btn-outline">
+        <i class="fa-solid fa-desktop"></i> Frontend Web
+      </a>
+    </div>
+  </header>
+
+  <div class="auth-bar">
+    <div class="role-buttons">
+      <span style="color: var(--text-sub); font-weight: 600;"><i class="fa-solid fa-user-lock"></i> Đổi Vai Trò Nhanh:</span>
+      <button class="btn btn-sm btn-outline" onclick="loginQuick('admin')"><i class="fa-solid fa-shield"></i> Admin</button>
+      <button class="btn btn-sm btn-outline" onclick="loginQuick('sales')"><i class="fa-solid fa-cart-shopping"></i> Sales</button>
+      <button class="btn btn-sm btn-outline" onclick="loginQuick('purchasing')"><i class="fa-solid fa-truck-ramp-box"></i> Purchasing</button>
+      <button class="btn btn-sm btn-outline" onclick="loginQuick('warehouse')"><i class="fa-solid fa-warehouse"></i> Warehouse</button>
+    </div>
+    <div class="user-info">
+      <span style="color: var(--text-sub);">Đang đăng nhập:</span>
+      <span id="current-user-badge" class="badge badge-purple">Admin (Nguyễn Quản Trị)</span>
+      <span id="token-status" class="badge badge-blue">JWT Token: Sẵn sàng</span>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <!-- Left Sidebar: Test List -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span>Danh Sách Test Cases (<span id="test-count">0</span>)</span>
+        <button class="btn btn-sm btn-outline" onclick="resetTestStatuses()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+      </div>
+      <ul class="test-list" id="test-list">
+        <!-- Rendered by JS -->
+      </ul>
+    </div>
+
+    <!-- Main Content: Playground & Runner -->
+    <div class="content-pane">
+      
+      <!-- Automated Suite Summary -->
+      <div class="batch-summary">
+        <div>
+          <div style="font-weight: 700; font-size: 14px; margin-bottom: 2px;">Trình Chạy Kiểm Thử Tự Động (Automated Suite)</div>
+          <div style="font-size: 12px; color: var(--text-sub);">Kiểm tra tính toàn vẹn của nghiệp vụ Bán hàng, Mua hàng, Nhập/Xuất kho & Sổ cái</div>
+        </div>
+        <div class="summary-metrics">
+          <div>Tổng: <b id="metric-total">0</b></div>
+          <div>Thành công: <b id="metric-pass" style="color: var(--success)">0</b></div>
+          <div>Thất bại: <b id="metric-fail" style="color: var(--danger)">0</b></div>
+          <div>Tiến độ: <b id="metric-progress">0%</b></div>
+        </div>
+      </div>
+
+      <!-- Current Selected Test Detail & Runner -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="fa-solid fa-terminal"></i>
+            <span id="active-test-title">Chọn một kịch bản kiểm thử bên trái</span>
+          </div>
+          <div class="response-meta" id="response-meta" style="display: none;">
+            <span>HTTP: <span id="resp-status">---</span></span>
+            <span>Thời gian: <span id="resp-time">---</span></span>
+          </div>
+        </div>
+
+        <div class="url-bar">
+          <select id="req-method" style="background: #1e293b; color: white; border: 1px solid var(--card-border); padding: 10px 14px; border-radius: 6px; font-weight: 700;">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+          <input type="text" id="req-url" class="url-input" value="/api/dashboard/stats" />
+          <button class="btn btn-primary" onclick="sendManualRequest()">
+            <i class="fa-solid fa-paper-plane"></i> Gửi Request
+          </button>
+        </div>
+
+        <div class="editor-section" id="req-body-section">
+          <div class="section-label">Request Body (JSON Payload):</div>
+          <textarea id="req-body" class="code-editor" placeholder="Không có body cho request GET..."></textarea>
+        </div>
+
+        <div class="editor-section">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="section-label">Response Data (JSON Trả Về):</div>
+            <button class="btn btn-sm btn-outline" onclick="copyResponse()"><i class="fa-solid fa-copy"></i> Sao chép</button>
+          </div>
+          <pre class="response-viewer" id="resp-body">// Kết quả trả về từ API sẽ hiển thị ở đây...</pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let activeToken = '';
+    let currentRole = 'admin';
+    let currentTestIndex = 0;
+
+    const testCases = [
+      {
+        id: 1,
+        category: 'Hệ thống & Swagger',
+        name: 'OpenAPI 3.0 Documentation',
+        method: 'GET',
+        endpoint: '/v3/api-docs',
+        body: '',
+        auth: false,
+        validator: (data, code) => code === 200 && data.openapi
+      },
+      {
+        id: 2,
+        category: 'Hệ thống & Swagger',
+        name: 'Kiểm tra Backend Root Status',
+        method: 'GET',
+        endpoint: '/api',
+        body: '',
+        auth: false,
+        validator: (data, code) => code === 200 && data.success === true
+      },
+      {
+        id: 3,
+        category: 'Xác thực & RBAC',
+        name: 'Đăng nhập Quản trị viên (Admin)',
+        method: 'POST',
+        endpoint: '/api/auth/login',
+        body: JSON.stringify({ username: 'admin', password: '123456' }, null, 2),
+        auth: false,
+        onSuccess: (data) => { activeToken = data.data.accessToken; },
+        validator: (data, code) => code === 200 && data.data && data.data.accessToken
+      },
+      {
+        id: 4,
+        category: 'Xác thực & RBAC',
+        name: 'Đăng nhập Nhân viên Bán hàng (Sales)',
+        method: 'POST',
+        endpoint: '/api/auth/login',
+        body: JSON.stringify({ username: 'sales', password: '123456' }, null, 2),
+        auth: false,
+        validator: (data, code) => code === 200 && data.data.user.roles.includes('ROLE_SALES')
+      },
+      {
+        id: 5,
+        category: 'Bảng điều khiển',
+        name: 'Thống kê KPIs Tổng quan',
+        method: 'GET',
+        endpoint: '/api/dashboard/stats',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.success === true
+      },
+      {
+        id: 6,
+        category: 'Bảng điều khiển',
+        name: 'Xu hướng Doanh thu 6 tháng',
+        method: 'GET',
+        endpoint: '/api/dashboard/sales-trend',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && Array.isArray(data.data)
+      },
+      {
+        id: 7,
+        category: 'Sản phẩm & Danh mục',
+        name: 'Danh sách Danh mục Sản phẩm',
+        method: 'GET',
+        endpoint: '/api/categories',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.length > 0
+      },
+      {
+        id: 8,
+        category: 'Sản phẩm & Danh mục',
+        name: 'Danh sách Sản phẩm (Pagination)',
+        method: 'GET',
+        endpoint: '/api/products?page=0&size=5',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.content
+      },
+      {
+        id: 9,
+        category: 'Khách hàng',
+        name: 'Danh sách Nhóm Khách hàng',
+        method: 'GET',
+        endpoint: '/api/customer-groups',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.length > 0
+      },
+      {
+        id: 10,
+        category: 'Khách hàng',
+        name: 'Danh sách Khách hàng',
+        method: 'GET',
+        endpoint: '/api/customers?page=0&size=5',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.content
+      },
+      {
+        id: 11,
+        category: 'Kho & Tồn kho',
+        name: 'Danh sách Kho hàng',
+        method: 'GET',
+        endpoint: '/api/warehouses',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.length > 0
+      },
+      {
+        id: 12,
+        category: 'Kho & Tồn kho',
+        name: 'Kiểm tra Tồn kho Thực tế',
+        method: 'GET',
+        endpoint: '/api/inventory?page=0&size=5',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.content
+      },
+      {
+        id: 13,
+        category: 'Bán hàng (Sales Order)',
+        name: 'Tạo Đơn Bán Hàng Mới (SO DRAFT)',
+        method: 'POST',
+        endpoint: '/api/sales-orders',
+        body: JSON.stringify({
+          customerId: 1,
+          warehouseId: 1,
+          orderDate: new Date().toISOString().split('T')[0],
+          notes: 'Test tu dong tao SO tu Workbench',
+          subtotal: 15000000,
+          discountAmount: 0,
+          taxAmount: 1500000,
+          totalAmount: 16500000,
+          items: [
+            { productId: 1, quantity: 1, unitPrice: 15000000, discountPercent: 0, lineTotal: 15000000 }
+          ]
+        }, null, 2),
+        auth: true,
+        validator: (data, code) => code === 200 && data.data && data.data.orderCode
+      },
+      {
+        id: 14,
+        category: 'Kho & Phiếu xuất (GIN)',
+        name: 'Danh sách Phiếu Xuất Kho',
+        method: 'GET',
+        endpoint: '/api/goods-issues',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.content
+      },
+      {
+        id: 15,
+        category: 'Mua hàng & Công nợ',
+        name: 'Danh sách Đơn Mua Hàng (PO)',
+        method: 'GET',
+        endpoint: '/api/purchase-orders',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.content
+      },
+      {
+        id: 16,
+        category: 'Mua hàng & Công nợ',
+        name: 'Bảng Theo Dõi Công Nợ NCC',
+        method: 'GET',
+        endpoint: '/api/supplier-debts',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.content
+      },
+      {
+        id: 17,
+        category: 'Sổ cái kho Bất biến',
+        name: 'Nhật ký Sổ Cái Kho (Stock Ledger)',
+        method: 'GET',
+        endpoint: '/api/stock-ledger?page=0&size=5',
+        body: '',
+        auth: true,
+        validator: (data, code) => code === 200 && data.data.content
+      },
+      {
+        id: 18,
+        category: 'Bảo mật & Phân quyền',
+        name: 'Chặn Token Không Hợp Lệ (401/403)',
+        method: 'GET',
+        endpoint: '/api/dashboard/stats',
+        body: '',
+        overrideToken: 'Bearer invalid_token_xyz_test',
+        validator: (data, code) => code === 401 || code === 403
+      }
+    ];
+
+    function renderSidebar() {
+      const list = document.getElementById('test-list');
+      list.innerHTML = '';
+      document.getElementById('test-count').innerText = testCases.length;
+      document.getElementById('metric-total').innerText = testCases.length;
+
+      testCases.forEach((tc, idx) => {
+        const li = document.createElement('li');
+        li.className = 'test-item' + (idx === currentTestIndex ? ' active' : '');
+        li.id = 'test-item-' + tc.id;
+        li.onclick = () => selectTest(idx);
+
+        const methodClass = 'method-' + tc.method.toLowerCase();
+        li.innerHTML = `
+          <div class="test-item-left">
+            <span class="method-pill ${methodClass}">${tc.method}</span>
+            <div>
+              <div class="test-name">${tc.name}</div>
+              <div class="test-endpoint">${tc.endpoint}</div>
+            </div>
+          </div>
+          <div class="test-status-icon status-idle" id="status-icon-${tc.id}">
+            <i class="fa-regular fa-circle"></i>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    function selectTest(index) {
+      currentTestIndex = index;
+      document.querySelectorAll('.test-item').forEach((el, idx) => {
+        el.classList.toggle('active', idx === index);
+      });
+
+      const tc = testCases[index];
+      document.getElementById('active-test-title').innerText = `${tc.category} > ${tc.name}`;
+      document.getElementById('req-method').value = tc.method;
+      document.getElementById('req-url').value = tc.endpoint;
+      document.getElementById('req-body').value = tc.body || '';
+      document.getElementById('req-body-section').style.display = tc.method === 'GET' ? 'none' : 'flex';
+      document.getElementById('resp-body').innerText = '// Bấm "Gửi Request" để thực hiện gọi API...';
+      document.getElementById('response-meta').style.display = 'none';
+    }
+
+    async function loginQuick(role) {
+      currentRole = role;
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: role, password: '123456' })
+        });
+        const data = await res.json();
+        if (data.success && data.data.accessToken) {
+          activeToken = data.data.accessToken;
+          document.getElementById('current-user-badge').innerText = `${role.toUpperCase()} (${data.data.user.fullName})`;
+          document.getElementById('token-status').innerText = 'JWT: Hoạt động';
+          document.getElementById('token-status').className = 'badge badge-green';
+        }
+      } catch (err) {
+        alert('Lỗi đăng nhập: ' + err.message);
+      }
+    }
+
+    async function executeSingleTest(tc) {
+      const startTime = performance.now();
+      const headers = { 'Content-Type': 'application/json' };
+      if (tc.overrideToken) {
+        headers['Authorization'] = tc.overrideToken;
+      } else if (tc.auth && activeToken) {
+        headers['Authorization'] = 'Bearer ' + activeToken;
+      }
+
+      let response;
+      let data = {};
+      let statusCode = 0;
+
+      try {
+        const options = {
+          method: tc.method,
+          headers: headers
+        };
+        if (tc.method !== 'GET' && tc.body) {
+          options.body = tc.body;
+        }
+
+        response = await fetch(tc.endpoint, options);
+        statusCode = response.status;
+        try {
+          data = await response.json();
+        } catch {
+          data = { text: await response.text() };
+        }
+      } catch (err) {
+        statusCode = 0;
+        data = { error: err.message };
+      }
+
+      const duration = Math.round(performance.now() - startTime);
+      const isPass = tc.validator ? tc.validator(data, statusCode) : statusCode === 200;
+
+      if (isPass && tc.onSuccess) {
+        tc.onSuccess(data);
+      }
+
+      return { isPass, statusCode, data, duration };
+    }
+
+    async function sendManualRequest() {
+      const method = document.getElementById('req-method').value;
+      const url = document.getElementById('req-url').value;
+      const body = document.getElementById('req-body').value;
+
+      const tc = {
+        method,
+        endpoint: url,
+        body,
+        auth: true
+      };
+
+      const result = await executeSingleTest(tc);
+      displayResult(result);
+    }
+
+    function displayResult(result) {
+      const meta = document.getElementById('response-meta');
+      meta.style.display = 'flex';
+      const statusEl = document.getElementById('resp-status');
+      statusEl.innerText = result.statusCode;
+      statusEl.className = result.isPass ? 'code-200' : 'code-err';
+      document.getElementById('resp-time').innerText = result.duration + 'ms';
+      document.getElementById('resp-body').innerText = JSON.stringify(result.data, null, 2);
+    }
+
+    async function runAllTests() {
+      // Ensure we have a valid token first
+      if (!activeToken) {
+        await loginQuick('admin');
+      }
+
+      let passCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < testCases.length; i++) {
+        selectTest(i);
+        const tc = testCases[i];
+        const iconEl = document.getElementById('status-icon-' + tc.id);
+        iconEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        iconEl.className = 'test-status-icon';
+
+        const result = await executeSingleTest(tc);
+        displayResult(result);
+
+        if (result.isPass) {
+          passCount++;
+          iconEl.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+          iconEl.className = 'test-status-icon status-pass';
+        } else {
+          failCount++;
+          iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+          iconEl.className = 'test-status-icon status-fail';
+        }
+
+        document.getElementById('metric-pass').innerText = passCount;
+        document.getElementById('metric-fail').innerText = failCount;
+        document.getElementById('metric-progress').innerText = Math.round(((i + 1) / testCases.length) * 100) + '%';
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+
+    function resetTestStatuses() {
+      testCases.forEach(tc => {
+        const iconEl = document.getElementById('status-icon-' + tc.id);
+        if (iconEl) {
+          iconEl.innerHTML = '<i class="fa-regular fa-circle"></i>';
+          iconEl.className = 'test-status-icon status-idle';
+        }
+      });
+      document.getElementById('metric-pass').innerText = '0';
+      document.getElementById('metric-fail').innerText = '0';
+      document.getElementById('metric-progress').innerText = '0%';
+    }
+
+    function copyResponse() {
+      const text = document.getElementById('resp-body').innerText;
+      navigator.clipboard.writeText(text);
+      alert('Đã sao chép dữ liệu JSON vào Clipboard!');
+    }
+
+    // Initialize
+    window.onload = async () => {
+      renderSidebar();
+      selectTest(0);
+      await loginQuick('admin');
+    };
+  </script>
+</body>
+</html>
