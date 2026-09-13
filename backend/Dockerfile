@@ -27,7 +27,8 @@ USER erpuser
 # JVM tuning & Environment variables
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC"
 ENV SPRING_PROFILES_ACTIVE="prod"
+ENV SERVER_PORT=7070
 
-EXPOSE 8080
+EXPOSE 7070
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

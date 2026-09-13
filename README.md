@@ -112,7 +112,7 @@ Hệ thống đã nạp sẵn các tài khoản phân quyền RBAC để kiểm 
 
 ### Cách 1: Chạy tự động với Script `run.sh` (Nhanh nhất & Đơn giản nhất)
 
-Script [run.sh](file:///home/sanrockk/mini-erp/run.sh) tự động dò tìm môi trường (Java 17, Maven, Node.js), dọn dẹp port cũ, biên dịch và chạy đồng thời Backend (8080) và Frontend (3000):
+Script [run.sh](file:///home/sanrockk/mini-erp/run.sh) tự động dò tìm môi trường (Java 17, Maven, Node.js), dọn dẹp port cũ, biên dịch và chạy đồng thời Backend (7070) và Frontend (3000):
 
 ```bash
 # Khởi chạy toàn bộ hệ thống (Backend + Frontend)
@@ -127,19 +127,32 @@ bash run.sh restart   # Khởi động lại hệ thống
 bash run.sh docker    # Khởi chạy qua Docker Compose
 ```
 
-### Cách 2: Chạy trực tiếp qua Docker Compose
+### Cách 2: Triển khai với Docker & Docker Compose (Khuyến nghị cho Server / Production)
 
-Yêu cầu: Đã cài đặt **Docker** và **Docker Compose**.
+Hệ thống cung cấp sẵn file `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile` (Nginx reverse proxy) và file cấu hình mẫu `.env.example`:
 
-```bash
-docker compose up --build -d
-```
+1. **Chuẩn bị cấu hình môi trường**:
+   ```bash
+   cp .env.example .env
+   # Chỉnh sửa thông số kết nối CSDL, secret key trong file .env nếu cần
+   ```
+
+2. **Khởi chạy bằng Docker Compose**:
+   ```bash
+   docker compose up --build -d
+   ```
+
+3. **Kiểm tra trạng thái container**:
+   ```bash
+   docker compose ps
+   docker compose logs -f
+   ```
 
 Truy cập hệ thống:
-- **Giao diện người dùng (Frontend)**: [http://localhost:3000](http://localhost:3000) (hoặc [http://localhost](http://localhost))
-- **API Backend RESTful**: [http://localhost:8080/api](http://localhost:8080/api)
-- **Tài liệu Swagger UI**: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-- **OpenAPI JSON Docs**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+- **Giao diện người dùng (Frontend)**: [http://localhost:3000](http://localhost:3000) hoặc [http://localhost](http://localhost) (hoặc domain [http://erp.hoanguyendev.id.vn](http://erp.hoanguyendev.id.vn))
+- **API Backend RESTful**: [http://localhost:7070/api](http://localhost:7070/api) (hoặc qua proxy `/api/` trên cổng 80/3000)
+- **Tài liệu Swagger UI**: [http://localhost:7070/swagger-ui/index.html](http://localhost:7070/swagger-ui/index.html)
+- **OpenAPI JSON Docs**: [http://localhost:7070/v3/api-docs](http://localhost:7070/v3/api-docs)
 
 ---
 
@@ -152,7 +165,7 @@ cd backend
 mvn clean package -DskipTests
 java -jar target/mini-erp-backend-1.0.0.jar
 ```
-Backend sẽ khởi chạy tại cổng `8080`, kết nối trực tiếp đến database MySQL `10.216.1.218:3306`.
+Backend sẽ khởi chạy tại cổng `7070`, kết nối trực tiếp đến database MySQL `10.216.1.218:3306`.
 
 #### Bước 2: Khởi động Frontend React Vite
 Yêu cầu: **Node.js 18+** và **npm**.
@@ -161,7 +174,7 @@ cd frontend
 npm install
 npm run dev
 ```
-Frontend sẽ chạy tại [http://localhost:3000](http://localhost:3000). Vite đã cấu hình proxy `/api` sang `http://localhost:8080`.
+Frontend sẽ chạy tại [http://localhost:3000](http://localhost:3000). Vite đã cấu hình proxy `/api` sang `http://localhost:7070`.
 
 ---
 
