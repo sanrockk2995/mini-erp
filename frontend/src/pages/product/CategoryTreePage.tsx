@@ -292,7 +292,7 @@ export const CategoryTreePage: React.FC = () => {
             label={<span style={{ fontWeight: 600 }}>Mã danh mục</span>}
             rules={[{ required: true, message: 'Vui lòng nhập mã danh mục' }]}
           >
-            <Input autoFocus placeholder="Ví dụ: CAT_ELECTRONICS" style={{ borderRadius: 6 }} />
+            <Input autoFocus placeholder="Ví dụ: MEN" style={{ borderRadius: 6 }} />
           </Form.Item>
 
           <Form.Item
@@ -300,7 +300,7 @@ export const CategoryTreePage: React.FC = () => {
             label={<span style={{ fontWeight: 600 }}>Tên danh mục</span>}
             rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}
           >
-            <Input placeholder="Ví dụ: Thiết bị Điện tử" style={{ borderRadius: 6 }} />
+            <Input placeholder="Ví dụ: Thời trang Nam" style={{ borderRadius: 6 }} />
           </Form.Item>
 
           <Form.Item name="parentId" label={<span style={{ fontWeight: 600 }}>Danh mục cha (nếu có)</span>}>

@@ -109,7 +109,7 @@ export const GoodsReceiptPage: React.FC = () => {
       const pos = await purchaseService.searchOrders({ status: 'APPROVED', page: 0, size: 50 });
       setApprovedPOs(pos.content);
       createForm.resetFields();
-      createForm.setFieldsValue({ receiptDate: dayjs() });
+      createForm.setFieldsValue({ receiptDate: dayjs().format('YYYY-MM-DD') });
       setCreateModalVisible(true);
     } catch (err) {
       message.error('Không thể tải danh sách PO đã duyệt');
@@ -119,14 +119,21 @@ export const GoodsReceiptPage: React.FC = () => {
   const handleCreateFromPO = async () => {
     try {
       const values = await createForm.validateFields();
-      const po = approvedPOs.find((p) => p.id === values.poId);
+      const poSummary = approvedPOs.find((p) => p.id === values.poId);
+      if (!poSummary) return;
+
+      const po = await purchaseService.getOrderById(poSummary.id);
       if (!po) return;
+
+      const dateStr = typeof values.receiptDate === 'string'
+        ? values.receiptDate
+        : (values.receiptDate?.format ? values.receiptDate.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'));
 
       const payload = {
         poId: po.id,
         warehouseId: po.warehouseId,
-        receiptDate: values.receiptDate.format('YYYY-MM-DD'),
-        notes: values.notes,
+        receiptDate: dateStr,
+        notes: values.notes || '',
         items: po.items?.map((it) => ({
           productId: it.productId,
           orderedQuantity: it.quantity,

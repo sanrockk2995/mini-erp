@@ -493,7 +493,7 @@ export const SupplierListPage: React.FC = () => {
               label={<span style={{ fontWeight: 600 }}>Tên nhà cung cấp</span>}
               rules={[{ required: true, message: 'Vui lòng nhập tên NCC' }]}
             >
-              <Input placeholder="Ví dụ: Công ty CP Thiết bị Việt Nam" style={{ borderRadius: 6 }} />
+              <Input placeholder="Ví dụ: Công ty CP May Mặc & Thời Trang Việt Nam" style={{ borderRadius: 6 }} />
             </Form.Item>
           </div>
 

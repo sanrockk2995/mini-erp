@@ -397,11 +397,11 @@ export const ProductListPage: React.FC = () => {
               label={<span style={{ fontWeight: 600 }}>Mã SKU</span>}
               rules={[{ required: true, message: 'Vui lòng nhập mã SKU' }]}
             >
-              <Input autoFocus placeholder="Ví dụ: SKU-IP15-128" />
+              <Input autoFocus placeholder="Ví dụ: AT-POLO-WHT-L" />
             </Form.Item>
 
             <Form.Item name="barcode" label={<span style={{ fontWeight: 600 }}>Mã vạch (Barcode)</span>}>
-              <Input placeholder="Ví dụ: 893123456789" />
+              <Input placeholder="Ví dụ: 8936012340011" />
             </Form.Item>
           </div>
 
@@ -410,7 +410,7 @@ export const ProductListPage: React.FC = () => {
             label={<span style={{ fontWeight: 600 }}>Tên sản phẩm</span>}
             rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}
           >
-            <Input placeholder="Ví dụ: iPhone 15 Pro Max 256GB" />
+            <Input placeholder="Ví dụ: Áo Polo Nam Pique Cotton Kháng Khuẩn" />
           </Form.Item>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>

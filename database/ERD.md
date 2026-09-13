@@ -61,7 +61,7 @@ erDiagram
 | 5 | `role_permissions` | Auth/RBAC | Liên kết N-N giữa vai trò và quyền |
 | 6 | `categories` | Sản phẩm | Cây phân cấp danh mục hàng hóa (tự tham chiếu parent_id) |
 | 7 | `products` | Sản phẩm | Thông tin mặt hàng, SKU, Barcode, đơn vị tính, giá vốn, giá niêm yết |
-| 8 | `product_attributes` | Sản phẩm | Thuộc tính linh hoạt (Color, Size, RAM, Storage...) |
+| 8 | `product_attributes` | Sản phẩm | Thuộc tính thời trang (Màu sắc, Kích cỡ Size, Chất liệu, Form dáng...) |
 | 9 | `customer_groups` | Khách hàng | Nhóm khách (Lẻ, Thân thiết, VIP, Đại lý) kèm chiết khấu mặc định |
 | 10 | `customers` | Khách hàng | Thông tin khách hàng cá nhân / doanh nghiệp, MST, địa chỉ |
 | 11 | `price_lists` | Bán hàng | Chính sách giá theo thời gian hiệu lực và nhóm đối tượng khách hàng |
@@ -82,3 +82,35 @@ erDiagram
 | 26 | `goods_receipt_items` | Kho | Dòng chi tiết hàng thực nhận đối chiếu với số lượng đặt |
 | 27 | `goods_issue_notes` | Kho | Phiếu xuất kho (tự động sinh khi duyệt SO hoặc xuất khác) |
 | 28 | `goods_issue_items` | Kho | Dòng chi tiết hàng thực xuất khỏi kho |
+
+## 3. Kiến trúc Tối giản: Zero-FK & Zero-Join Flat Read Model
+
+Nhằm đáp ứng yêu cầu **"giảm tải liên kết bảng và cấu trúc bảng hết mức"**, kiến trúc cơ sở dữ liệu đã được tinh gọn triệt để:
+
+### 3.1. Zero Database-Level Foreign Keys (Không ràng buộc FK cứng)
+- Toàn bộ 28 bảng **không có bất kỳ khóa ngoại vật lý nào (`CONSTRAINT fk_...`)** ở tầng MySQL Engine.
+- Toàn vẹn tham chiếu và tính hợp lệ logic nghiệp vụ được ủy quyền 100% cho tầng ứng dụng Spring Data JPA xử lý.
+- **Lợi ích**:
+  - Loại bỏ hoàn toàn Foreign Key Lock Contention khi nhiều luồng thực hiện Insert/Update/Delete đồng thời.
+  - Tăng tốc độ ghi (throughput) vượt trội khi import/export dữ liệu lớn.
+  - Phù hợp với kiến trúc mở rộng phân tán, Sharding hoặc tách Microservices trong tương lai.
+
+### 3.2. Zero-Join Flat Read Model (Denormalization - Đọc dữ liệu phẳng không cần JOIN)
+- Các trường hiển thị thường dùng được nhúng trực tiếp (*denormalized*) vào các bảng giao dịch và kho vận:
+  - `sales_orders`: Mang trực tiếp `customer_code`, `customer_name`, `customer_phone`, `warehouse_code`, `warehouse_name`.
+  - `sales_order_items`: Mang trực tiếp `product_sku`, `product_name`, `product_unit`.
+  - `purchase_orders`: Mang trực tiếp `supplier_code`, `supplier_name`, `warehouse_code`, `warehouse_name`.
+  - `purchase_order_items`: Mang trực tiếp `product_sku`, `product_name`, `product_unit`.
+  - `inventory` & `stock_ledger`: Mang trực tiếp `warehouse_code`, `warehouse_name`, `product_sku`, `product_name`.
+  - `goods_receipt_notes` & `goods_issue_notes`: Mang trực tiếp `supplier_name`, `customer_name`, `warehouse_name`.
+  - `goods_receipt_items` & `goods_issue_items`: Mang trực tiếp `product_sku`, `product_name`, `product_unit`.
+  - `supplier_debts` & `supplier_payments`: Mang trực tiếp `po_code`, `supplier_name`, `debt_invoice_code`.
+- **Lợi ích**:
+  - Cho phép các câu lệnh `SELECT` truy vấn màn hình danh sách, báo cáo hoặc tìm kiếm chỉ từ **1 bảng duy nhất (Single-Table Query)** mà không cần qua 3–4 bảng `JOIN`.
+  - Triệt tiêu lỗi N+1 Hibernate Lazy Loading khi duyệt danh sách đối tượng.
+
+### 3.3. Tối giản Chỉ mục (Index Pruning)
+- Loại bỏ toàn bộ Secondary Non-Unique Indexes dư thừa trên các cột trạng thái hoặc khóa ngoại.
+- Chỉ giữ lại duy nhất **Primary Keys (`id`)** và **Business Unique Constraints** (`sku`, `order_code`, `po_code`, `grn_code`, `gin_code`, `invoice_code`, `payment_code`, `uk_inv_wh_prod`).
+- **Lợi ích**: Giảm thiểu diện tích lưu trữ B-Tree trong InnoDB Buffer Pool, giảm chi phí Disk I/O khi ghi dữ liệu.
+
