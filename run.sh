@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # HỆ THỐNG MINI-ERP ENTERPRISE - SCRIPT KHỞI CHẠY TỰ ĐỘNG
-# Backend: Spring Boot 3 (Port 8080)
+# Backend: Spring Boot 3 (Port 7070)
 # Frontend: React 18 + Vite + Ant Design (Port 3000)
 # CSDL: MySQL 8 (10.216.1.218:3306 / erp_db)
 # ==============================================================================
@@ -153,13 +153,14 @@ stop_running_processes() {
     rm -f "$PID_FILE"
   fi
 
-  # Giải phóng các cổng 8080, 3000, 5173
+  # Giải phóng các cổng 7070, 8080, 3000, 5173
   if command -v fuser &> /dev/null; then
+    fuser -k 7070/tcp 2>/dev/null || true
     fuser -k 8080/tcp 2>/dev/null || true
     fuser -k 3000/tcp 2>/dev/null || true
     fuser -k 5173/tcp 2>/dev/null || true
   elif command -v lsof &> /dev/null; then
-    for port in 8080 3000 5173; do
+    for port in 7070 8080 3000 5173; do
       local p
       p=$(lsof -ti:"$port" 2>/dev/null || true)
       if [ -n "$p" ]; then
@@ -200,9 +201,9 @@ print_access_info() {
   echo -e "${GREEN}${BOLD}              🚀 HỆ THỐNG MINI-ERP ĐÃ KHỞI CHẠY THÀNH CÔNG             ${NC}"
   echo -e "${GREEN}${BOLD}═══════════════════════════════════════════════════════════════════════${NC}"
   echo -e "  🌐 ${BOLD}Giao diện người dùng (Frontend):${NC}  ${CYAN}${BOLD}http://localhost:3000${NC}"
-  echo -e "  ⚙️  ${BOLD}API Backend RESTful:${NC}            ${CYAN}http://localhost:8080/api${NC}"
-  echo -e "  📑 ${BOLD}OpenAPI Swagger UI:${NC}             ${CYAN}http://localhost:8080/swagger-ui/index.html${NC}"
-  echo -e "  📄 ${BOLD}API Docs (OpenAPI JSON):${NC}        ${CYAN}http://localhost:8080/v3/api-docs${NC}"
+  echo -e "  ⚙️  ${BOLD}API Backend RESTful:${NC}            ${CYAN}http://localhost:7070/api${NC}"
+  echo -e "  📑 ${BOLD}OpenAPI Swagger UI:${NC}             ${CYAN}http://localhost:7070/swagger-ui/index.html${NC}"
+  echo -e "  📄 ${BOLD}API Docs (OpenAPI JSON):${NC}        ${CYAN}http://localhost:7070/v3/api-docs${NC}"
   echo ""
   echo -e "${YELLOW}${BOLD}🔑 TÀI KHOẢN ĐĂNG NHẬP HỆ THỐNG (Mật khẩu chung: 123456):${NC}"
   echo -e "  ┌──────────────────┬──────────┬────────────────────────────────────────┐"
@@ -242,7 +243,7 @@ start_system() {
   fi
 
   # 3. Khởi chạy Backend
-  echo -e "${BLUE}▶ [3/4] Khởi động Spring Boot Backend (Port 8080)...${NC}"
+  echo -e "${BLUE}▶ [3/4] Khởi động Spring Boot Backend (Port 7070)...${NC}"
   if [ -f "$BACKEND_JAR" ]; then
     (java -jar "$BACKEND_JAR") > "$BACKEND_LOG" 2>&1 &
     BACKEND_PID=$!
@@ -267,7 +268,7 @@ start_system() {
   local backend_ready=false
 
   while [ $attempt -le $max_attempts ]; do
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/v3/api-docs 2>/dev/null | grep -q "200"; then
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:7070/v3/api-docs 2>/dev/null | grep -q "200"; then
       backend_ready=true
       break
     fi
@@ -346,10 +347,10 @@ check_status() {
   fi
 
   # Backend check
-  if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/v3/api-docs 2>/dev/null | grep -q "200"; then
-    echo -e "  ⚙️  Backend (Port 8080):  ${GREEN}● Đang chạy (HTTP 200 OK)${NC} (PID: ${b_pid:-N/A})"
+  if curl -s -o /dev/null -w "%{http_code}" http://localhost:7070/v3/api-docs 2>/dev/null | grep -q "200"; then
+    echo -e "  ⚙️  Backend (Port 7070):  ${GREEN}● Đang chạy (HTTP 200 OK)${NC} (PID: ${b_pid:-N/A})"
   else
-    echo -e "  ⚙️  Backend (Port 8080):  ${RED}○ Đang dừng${NC}"
+    echo -e "  ⚙️  Backend (Port 7070):  ${RED}○ Đang dừng${NC}"
   fi
 
   # Frontend check
@@ -410,7 +411,7 @@ case "$ACTION" in
   "help"|"-h"|"--help")
     print_banner
     echo -e "${BOLD}CÁC LỆNH ĐIỀU KHIỂN HỆ THỐNG:${NC}"
-    echo -e "  ${GREEN}bash run.sh${NC}          : Tự động khởi chạy toàn bộ Backend (8080) và Frontend (3000)"
+    echo -e "  ${GREEN}bash run.sh${NC}          : Tự động khởi chạy toàn bộ Backend (7070) và Frontend (3000)"
     echo -e "  ${GREEN}bash run.sh --build${NC}  : Re-build lại file jar và khởi chạy"
     echo -e "  ${GREEN}bash run.sh stop${NC}     : Dừng toàn bộ các dịch vụ đang chạy"
     echo -e "  ${GREEN}bash run.sh restart${NC}  : Khởi động lại hệ thống"

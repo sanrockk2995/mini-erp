@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-BASE_URL="http://localhost:8080/api"
+BASE_URL="http://localhost:7070/api"
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 CYAN='\033[0;36m'
@@ -13,7 +13,7 @@ echo -e "${CYAN}================================================================
 
 # 1. Test Swagger OpenAPI Endpoint
 echo -e "\n1. Kiem tra OpenAPI Swagger docs:"
-SWAGGER_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/v3/api-docs)
+SWAGGER_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:7070/v3/api-docs)
 if [ "$SWAGGER_CODE" -eq 200 ]; then
   echo -e "${GREEN}✓ OpenAPI 3.0 docs phan hoi HTTP 200 OK${NC}"
 else
