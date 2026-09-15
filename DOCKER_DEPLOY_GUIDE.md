@@ -162,11 +162,11 @@ Sau khi triển khai thành công, bạn có thể truy cập qua địa chỉ I
 ### Danh sách tài khoản đăng nhập mẫu:
 | Vai trò (Role) | Tên đăng nhập | Mật khẩu | Quyền hạn chính |
 |---|---|---|---|
-| **Tổng Giám đốc (Admin)** | `admin` | `admin123` | Toàn quyền kiểm soát hệ thống, thiết lập danh mục |
-| **Nhân viên Bán hàng (Sales)** | `sales` | `sales123` | Quản lý Khách hàng, Báo giá, Lập Đơn bán hàng (SO) |
-| **Nhân viên Mua hàng (Purchasing)** | `purchase` | `purchase123` | Quản lý Nhà cung cấp, Lập Đơn mua hàng (PO) |
-| **Thủ kho (Warehouse)** | `warehouse` | `warehouse123` | Nhập kho (GRN), Xuất kho (GIN), Theo dõi tồn kho & Sổ cái |
-| **Kế toán nợ (Accountant)** | `accountant` | `acc123` | Theo dõi và Thanh toán Công nợ Nhà cung cấp |
+| **Tổng Giám đốc (Admin)** | `admin` | `123456` | Toàn quyền kiểm soát hệ thống, thiết lập danh mục |
+| **Nhân viên Bán hàng (Sales)** | `sales` | `123456` | Quản lý Khách hàng, Báo giá, Lập Đơn bán hàng (SO) |
+| **Nhân viên Mua hàng (Purchasing)** | `purchasing` / `purchase_user` | `123456` | Quản lý Nhà cung cấp, Lập Đơn mua hàng (PO) |
+| **Thủ kho (Warehouse)** | `warehouse` | `123456` | Nhập kho (GRN), Xuất kho (GIN), Theo dõi tồn kho & Sổ cái |
+| **Kế toán nợ (Accountant)** | `accountant` | `123456` | Theo dõi và Thanh toán Công nợ Nhà cung cấp |
 
 ---
 
