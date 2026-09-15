@@ -2,8 +2,10 @@ package com.erp.modules.auth.entity;
 
 import com.erp.common.BaseEntity;
 import jakarta.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -28,16 +30,14 @@ public class User extends BaseEntity {
     @Column(length = 20)
     private String phone;
 
+    @Column(nullable = false, length = 50)
+    private String role = "ADMIN";
+
+    @Column(columnDefinition = "TEXT")
+    private String permissions;
+
     @Column(nullable = false, length = 20)
     private String status = "ACTIVE";
-
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
 
     public User() {}
 
@@ -53,8 +53,36 @@ public class User extends BaseEntity {
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+    public String getPermissions() { return permissions; }
+    public void setPermissions(String permissions) { this.permissions = permissions; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    public Set<Role> getRoles() { return roles; }
-    public void setRoles(Set<Role> roles) { this.roles = roles; }
+
+    public List<String> getRoleList() {
+        List<String> list = new ArrayList<>();
+        if (role != null && !role.trim().isEmpty()) {
+            for (String r : role.split(",")) {
+                String trimmed = r.trim();
+                if (!trimmed.isEmpty()) {
+                    list.add(trimmed.startsWith("ROLE_") ? trimmed : "ROLE_" + trimmed);
+                }
+            }
+        }
+        return list;
+    }
+
+    public List<String> getPermissionList() {
+        List<String> list = new ArrayList<>();
+        if (permissions != null && !permissions.trim().isEmpty()) {
+            for (String p : permissions.split(",")) {
+                String trimmed = p.trim();
+                if (!trimmed.isEmpty()) {
+                    list.add(trimmed);
+                }
+            }
+        }
+        return list;
+    }
 }

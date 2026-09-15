@@ -2,7 +2,7 @@
 -- MINI-ERP CLOTHING & APPAREL SEED DATA (MySQL 8+)
 -- Database: erp_db
 -- Hệ thống Quản trị Doanh nghiệp Dệt may & Bán lẻ Thời trang
--- Kiến trúc: Core-FK & Flat Read Model (Tối ưu hợp nhất 21 bảng)
+-- Kiến trúc: Core-FK & Flat Read Model (Tối ưu hợp nhất 18 bảng)
 -- Mật khẩu mặc định toàn hệ thống: 123456
 -- ====================================================================
 
@@ -11,15 +11,10 @@ SET CHARACTER SET utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- --------------------------------------------------------------------
--- 1. AUTH & RBAC (Vai trò & Phân quyền)
+-- 1. AUTH & RBAC (Phân quyền & Người dùng Hợp nhất - Zero-Join Auth)
+-- Bảng permissions lưu danh mục quyền hệ thống
+-- Bảng users hợp nhất vai trò (role) và danh sách quyền (permissions)
 -- --------------------------------------------------------------------
-
-INSERT INTO roles (id, code, name, description) VALUES
-(1, 'ADMIN', 'Quản trị hệ thống', 'Toàn quyền cấu hình và quản lý mọi phân hệ'),
-(2, 'SALES', 'Nhân viên bán hàng', 'Tạo và quản lý đơn bán hàng, khách hàng, xem bảng giá thời trang'),
-(3, 'PURCHASING', 'Nhân viên mua hàng', 'Quản lý nhà cung cấp vải/may mặc, lập và theo dõi đơn mua hàng PO'),
-(4, 'WAREHOUSE', 'Thủ kho thời trang', 'Quản lý xuất nhập kho vải, quần áo may sẵn, kiểm kê size và màu sắc'),
-(5, 'ACCOUNTANT', 'Kế toán công nợ', 'Quản lý công nợ NCC may mặc, duyệt chi thanh toán, báo cáo tài chính');
 
 INSERT INTO permissions (id, code, name, module) VALUES
 (1, 'PRODUCT_VIEW', 'Xem danh mục & sản phẩm', 'PRODUCT'),
@@ -41,40 +36,16 @@ INSERT INTO permissions (id, code, name, module) VALUES
 (17, 'GIN_MANAGE', 'Xuất kho hàng hóa', 'WAREHOUSE'),
 (18, 'DASHBOARD_VIEW', 'Xem báo cáo thống kê Dashboard', 'DASHBOARD');
 
--- Gán quyền ADMIN (Full 1..18)
-INSERT INTO role_permissions (role_id, permission_id) VALUES
-(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8),
-(1, 9), (1, 10), (1, 11), (1, 12), (1, 13), (1, 14), (1, 15), (1, 16), (1, 17), (1, 18);
-
--- Gán quyền SALES
-INSERT INTO role_permissions (role_id, permission_id) VALUES
-(2, 1), (2, 4), (2, 5), (2, 6), (2, 8), (2, 15), (2, 18);
-
--- Gán quyền PURCHASING
-INSERT INTO role_permissions (role_id, permission_id) VALUES
-(3, 1), (3, 9), (3, 10), (3, 11), (3, 15), (3, 18);
-
--- Gán quyền WAREHOUSE
-INSERT INTO role_permissions (role_id, permission_id) VALUES
-(4, 1), (4, 15), (4, 16), (4, 17), (4, 18);
-
--- Gán quyền ACCOUNTANT
-INSERT INTO role_permissions (role_id, permission_id) VALUES
-(5, 4), (5, 9), (5, 13), (5, 14), (5, 18);
-
 -- Users (Mật khẩu: 123456 -> BCrypt hash)
-INSERT INTO users (id, username, email, password_hash, full_name, phone, status) VALUES
-(1, 'admin', 'admin@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Nguyễn Quản Trị', '0901234567', 'ACTIVE'),
-(2, 'sales_user', 'sales@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Trần Thu Thảo', '0912345678', 'ACTIVE'),
-(3, 'purchase_user', 'purchase@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Lê Hoàng Nam', '0923456789', 'ACTIVE'),
-(4, 'warehouse_user', 'warehouse@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Phạm Quốc Bảo', '0934567890', 'ACTIVE'),
-(5, 'accountant_user', 'accountant@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Vũ Mai Hương', '0945678901', 'ACTIVE'),
-(10, 'sales', 'sales_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Trần Thu Thảo', '0912345678', 'ACTIVE'),
-(11, 'purchasing', 'purchasing_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Lê Hoàng Nam', '0923456789', 'ACTIVE'),
-(12, 'warehouse', 'warehouse_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Phạm Quốc Bảo', '0934567890', 'ACTIVE');
-
-INSERT INTO user_roles (user_id, role_id) VALUES
-(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (10, 2), (11, 3), (12, 4);
+INSERT INTO users (id, username, email, password_hash, full_name, phone, role, permissions, status) VALUES
+(1, 'admin', 'admin@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Nguyễn Quản Trị', '0901234567', 'ADMIN', 'PRODUCT_VIEW,PRODUCT_MANAGE,PRICELIST_MANAGE,CUSTOMER_VIEW,CUSTOMER_MANAGE,SO_CREATE,SO_APPROVE,SO_CANCEL,SUPPLIER_VIEW,SUPPLIER_MANAGE,PO_CREATE,PO_APPROVE,DEBT_VIEW,PAYMENT_CREATE,STOCK_VIEW,GRN_MANAGE,GIN_MANAGE,DASHBOARD_VIEW', 'ACTIVE'),
+(2, 'sales_user', 'sales@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Trần Thu Thảo', '0912345678', 'SALES', 'PRODUCT_VIEW,CUSTOMER_VIEW,CUSTOMER_MANAGE,SO_CREATE,SO_CANCEL,STOCK_VIEW,DASHBOARD_VIEW', 'ACTIVE'),
+(3, 'purchase_user', 'purchase@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Lê Hoàng Nam', '0923456789', 'PURCHASING', 'PRODUCT_VIEW,SUPPLIER_VIEW,SUPPLIER_MANAGE,PO_CREATE,STOCK_VIEW,DASHBOARD_VIEW', 'ACTIVE'),
+(4, 'warehouse_user', 'warehouse@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Phạm Quốc Bảo', '0934567890', 'WAREHOUSE', 'PRODUCT_VIEW,STOCK_VIEW,GRN_MANAGE,GIN_MANAGE,DASHBOARD_VIEW', 'ACTIVE'),
+(5, 'accountant_user', 'accountant@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Vũ Mai Hương', '0945678901', 'ACCOUNTANT', 'CUSTOMER_VIEW,SUPPLIER_VIEW,DEBT_VIEW,PAYMENT_CREATE,DASHBOARD_VIEW', 'ACTIVE'),
+(10, 'sales', 'sales_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Trần Thu Thảo', '0912345678', 'SALES', 'PRODUCT_VIEW,CUSTOMER_VIEW,CUSTOMER_MANAGE,SO_CREATE,SO_CANCEL,STOCK_VIEW,DASHBOARD_VIEW', 'ACTIVE'),
+(11, 'purchasing', 'purchasing_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Lê Hoàng Nam', '0923456789', 'PURCHASING', 'PRODUCT_VIEW,SUPPLIER_VIEW,SUPPLIER_MANAGE,PO_CREATE,STOCK_VIEW,DASHBOARD_VIEW', 'ACTIVE'),
+(12, 'warehouse', 'warehouse_alias@erp.vn', '$2a$10$EblZqNptyYvcLm/VwDCVAuBjzZOI7khzdyGPBr08PpIi0na624b8.', 'Phạm Quốc Bảo', '0934567890', 'WAREHOUSE', 'PRODUCT_VIEW,STOCK_VIEW,GRN_MANAGE,GIN_MANAGE,DASHBOARD_VIEW', 'ACTIVE');
 
 -- --------------------------------------------------------------------
 -- 2. WAREHOUSES (Hệ thống Kho Dệt may & Thành phẩm)

@@ -2,12 +2,12 @@
 -- MINI-ERP CLOTHING & APPAREL DATABASE SCHEMA (MySQL 8+)
 -- Database: erp_db
 -- Hệ thống Quản trị Doanh nghiệp Dệt may & Bán lẻ Thời trang
--- Kiến trúc: Core-FK & Flat Read Model (Tối ưu hợp nhất 21 bảng)
--- Giữ các liên kết chính: RBAC, Cây danh mục, Chi tiết dòng đơn hàng,
+-- Kiến trúc: Core-FK & Flat Read Model (Tối ưu hợp nhất 18 bảng)
+-- Giữ các liên kết chính: Cây danh mục, Chi tiết dòng đơn hàng,
 -- Tồn kho, Sổ cái, Đơn mua, Công nợ, Nhập/Xuất kho.
--- Tối ưu truy vấn: Hợp nhất các bảng phân mảnh (customer_groups, product_attributes,
--- price_lists, sales_order_status_history, supplier_reviews, supplier_payments)
--- vào các bảng chính tương ứng, loại bỏ JOIN dư thừa, bảo toàn toàn vẹn dữ liệu.
+-- Tối ưu truy vấn: Hợp nhất Auth (users + roles + user_roles + role_permissions thành users)
+-- và các bảng phân mảnh (customer_groups, product_attributes, price_lists,
+-- sales_order_status_history, supplier_reviews, supplier_payments) vào bảng chính.
 -- ====================================================================
 
 SET NAMES utf8mb4;
@@ -31,15 +31,17 @@ DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS role_permissions;
-DROP TABLE IF EXISTS permissions;
 DROP TABLE IF EXISTS user_roles;
 DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS permissions;
 DROP TABLE IF EXISTS users;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- --------------------------------------------------------------------
--- 1. AUTH & RBAC (Phân quyền & Người dùng)
+-- 1. AUTH & RBAC (Phân quyền & Người dùng Hợp nhất - Zero-Join Auth)
+-- Bảng users hợp nhất vai trò (role) và danh sách quyền (permissions)
+-- Bảng permissions lưu danh mục quyền hệ thống
 -- --------------------------------------------------------------------
 
 CREATE TABLE users (
@@ -49,19 +51,13 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
+    role VARCHAR(50) NOT NULL DEFAULT 'ADMIN',
+    permissions TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_users_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE roles (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(100) NOT NULL,
-    description VARCHAR(255),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    INDEX idx_users_status (status),
+    INDEX idx_users_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE permissions (
@@ -70,22 +66,6 @@ CREATE TABLE permissions (
     name VARCHAR(100) NOT NULL,
     module VARCHAR(50) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE user_roles (
-    user_id BIGINT NOT NULL,
-    role_id BIGINT NOT NULL,
-    PRIMARY KEY (user_id, role_id),
-    CONSTRAINT fk_ur_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_ur_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE role_permissions (
-    role_id BIGINT NOT NULL,
-    permission_id BIGINT NOT NULL,
-    PRIMARY KEY (role_id, permission_id),
-    CONSTRAINT fk_rp_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-    CONSTRAINT fk_rp_perm FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------

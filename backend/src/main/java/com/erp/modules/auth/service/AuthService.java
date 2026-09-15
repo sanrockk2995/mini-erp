@@ -18,10 +18,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 public class AuthService {
+
+    private static final Map<String, List<String>> DEFAULT_ROLE_PERMISSIONS = Map.of(
+            "ADMIN", List.of("PRODUCT_VIEW", "PRODUCT_MANAGE", "PRICELIST_MANAGE", "CUSTOMER_VIEW", "CUSTOMER_MANAGE", "SO_CREATE", "SO_APPROVE", "SO_CANCEL", "SUPPLIER_VIEW", "SUPPLIER_MANAGE", "PO_CREATE", "PO_APPROVE", "DEBT_VIEW", "PAYMENT_CREATE", "STOCK_VIEW", "GRN_MANAGE", "GIN_MANAGE", "DASHBOARD_VIEW"),
+            "SALES", List.of("PRODUCT_VIEW", "CUSTOMER_VIEW", "CUSTOMER_MANAGE", "SO_CREATE", "SO_CANCEL", "STOCK_VIEW", "DASHBOARD_VIEW"),
+            "PURCHASING", List.of("PRODUCT_VIEW", "SUPPLIER_VIEW", "SUPPLIER_MANAGE", "PO_CREATE", "STOCK_VIEW", "DASHBOARD_VIEW"),
+            "WAREHOUSE", List.of("PRODUCT_VIEW", "STOCK_VIEW", "GRN_MANAGE", "GIN_MANAGE", "DASHBOARD_VIEW"),
+            "ACCOUNTANT", List.of("CUSTOMER_VIEW", "SUPPLIER_VIEW", "DEBT_VIEW", "PAYMENT_CREATE", "DASHBOARD_VIEW")
+    );
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -85,16 +93,13 @@ public class AuthService {
     }
 
     public UserDto mapToUserDto(User user) {
-        List<String> roles = user.getRoles() != null ? user.getRoles().stream()
-                .map(r -> "ROLE_" + r.getCode())
-                .collect(Collectors.toList()) : new ArrayList<>();
+        List<String> roles = user.getRoleList();
+        List<String> permissions = user.getPermissionList();
 
-        List<String> permissions = user.getRoles() != null ? user.getRoles().stream()
-                .flatMap(r -> r.getPermissions() != null ? r.getPermissions().stream() : null)
-                .filter(java.util.Objects::nonNull)
-                .map(p -> p.getCode())
-                .distinct()
-                .collect(Collectors.toList()) : new ArrayList<>();
+        if (permissions.isEmpty() && user.getRole() != null) {
+            String primaryRole = user.getRole().replace("ROLE_", "").toUpperCase();
+            permissions = DEFAULT_ROLE_PERMISSIONS.getOrDefault(primaryRole, new ArrayList<>());
+        }
 
         return new UserDto(
                 user.getId(),

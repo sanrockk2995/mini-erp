@@ -32,15 +32,11 @@ public class UserPrincipal implements UserDetails {
 
     public static UserPrincipal create(User user) {
         Set<GrantedAuthority> authorities = new HashSet<>();
-        if (user.getRoles() != null) {
-            user.getRoles().forEach(role -> {
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + role.getCode()));
-                if (role.getPermissions() != null) {
-                    role.getPermissions().forEach(permission -> {
-                        authorities.add(new SimpleGrantedAuthority(permission.getCode()));
-                    });
-                }
-            });
+        if (user.getRoleList() != null) {
+            user.getRoleList().forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
+        }
+        if (user.getPermissionList() != null) {
+            user.getPermissionList().forEach(perm -> authorities.add(new SimpleGrantedAuthority(perm)));
         }
 
         return new UserPrincipal(
