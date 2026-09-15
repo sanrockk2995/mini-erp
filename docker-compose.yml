@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   backend:
+    image: ghcr.io/sanrockk2995/mini-erp-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -33,6 +34,7 @@ services:
       - erp-network
 
   frontend:
+    image: ghcr.io/sanrockk2995/mini-erp-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile

@@ -184,6 +184,9 @@ File script `deploy-docker.sh` cung cấp đầy đủ các tiện ích quản l
 # Kiểm tra trạng thái container và mức độ tiêu thụ RAM / CPU
 ./deploy-docker.sh status
 
+# Kéo Docker image đóng gói sẵn từ GitHub Container Registry (GHCR)
+./deploy-docker.sh pull
+
 # Tự động kéo mã nguồn mới nhất từ GitHub và re-deploy (Cập nhật phiên bản)
 ./deploy-docker.sh update
 

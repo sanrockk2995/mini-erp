@@ -208,6 +208,14 @@ update_system() {
     deploy_system
 }
 
+# 9b. Kéo Docker image đóng gói sẵn từ GitHub Container Registry (GHCR)
+pull_images() {
+    check_docker
+    log_info "Kéo Docker image mới nhất từ GitHub Container Registry (ghcr.io)..."
+    $COMPOSE_CMD pull
+    log_success "Đã tải Docker images thành công! Bạn có thể chạy: $0 up"
+}
+
 # 10. Kiểm thử nhanh các Endpoint
 test_system() {
     log_info "Đang kiểm tra kết nối tới các dịch vụ..."
@@ -241,6 +249,7 @@ show_help() {
     echo ""
     echo "Các lệnh hỗ trợ:"
     echo "  deploy | up        Build và khởi chạy hệ thống ở chế độ background (mặc định)"
+    echo "  pull               Kéo image đã build sẵn từ GitHub Container Registry (ghcr.io)"
     echo "  down | stop        Dừng và gỡ bỏ toàn bộ container"
     echo "  restart [service]  Khởi động lại toàn bộ hoặc một service cụ thể (backend | frontend)"
     echo "  logs [service]     Xem trực tiếp log theo thời gian thực (backend | frontend)"
@@ -258,6 +267,9 @@ COMMAND="${1:-deploy}"
 case "$COMMAND" in
     deploy|up)
         deploy_system
+        ;;
+    pull)
+        pull_images
         ;;
     down|stop)
         stop_system
