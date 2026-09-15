@@ -3,8 +3,11 @@
 FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
-# Copy pom.xml and source code
+# Cache Maven dependencies
 COPY pom.xml .
+RUN mvn dependency:go-offline -B || true
+
+# Copy source code
 COPY src ./src
 
 # Package application jar (skip tests for container packaging)
@@ -13,6 +16,9 @@ RUN mvn clean package -DskipTests
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+
+# Install curl and wget for health checks
+RUN apk add --no-cache curl wget
 
 # Create non-root user for security
 RUN addgroup -S erpgroup && adduser -S erpuser -G erpgroup
@@ -30,5 +36,8 @@ ENV SPRING_PROFILES_ACTIVE="prod"
 ENV SERVER_PORT=7070
 
 EXPOSE 7070
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
+  CMD wget -q --spider http://localhost:7070/v3/api-docs || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
