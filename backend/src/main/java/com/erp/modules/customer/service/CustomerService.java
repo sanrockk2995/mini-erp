@@ -7,8 +7,6 @@ import com.erp.modules.customer.dto.CustomerDto;
 import com.erp.modules.customer.dto.CustomerPurchaseHistoryDto;
 import com.erp.modules.customer.dto.CustomerRequest;
 import com.erp.modules.customer.entity.Customer;
-import com.erp.modules.customer.entity.CustomerGroup;
-import com.erp.modules.customer.repository.CustomerGroupRepository;
 import com.erp.modules.customer.repository.CustomerRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -29,23 +27,20 @@ import java.util.List;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
-    private final CustomerGroupRepository customerGroupRepository;
     private final EntityManager entityManager;
 
     public CustomerService(CustomerRepository customerRepository,
-                           CustomerGroupRepository customerGroupRepository,
                            EntityManager entityManager) {
         this.customerRepository = customerRepository;
-        this.customerGroupRepository = customerGroupRepository;
         this.entityManager = entityManager;
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<CustomerDto> search(String keyword, Long groupId, Boolean isActive, int page, int size) {
+    public PageResponse<CustomerDto> search(String keyword, String groupName, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Page<Customer> customerPage = customerRepository.searchCustomers(
                 keyword != null && !keyword.trim().isEmpty() ? keyword.trim() : null,
-                groupId,
+                groupName != null && !groupName.trim().isEmpty() ? groupName.trim() : null,
                 isActive,
                 pageable
         );
@@ -98,10 +93,16 @@ public class CustomerService {
         customer.setTaxCode(request.getTaxCode());
         customer.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
 
-        if (request.getGroupId() != null) {
-            CustomerGroup group = customerGroupRepository.findById(request.getGroupId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Nhóm khách hàng", "id", request.getGroupId()));
-            customer.setGroup(group);
+        if (request.getGroupName() != null && !request.getGroupName().trim().isEmpty()) {
+            customer.setGroupName(request.getGroupName().trim());
+        } else {
+            customer.setGroupName("Khách Hàng Mua Lẻ");
+        }
+
+        if (request.getDiscountPercent() != null) {
+            customer.setDiscountPercent(request.getDiscountPercent());
+        } else {
+            customer.setDiscountPercent(getDefaultDiscountForGroup(customer.getGroupName()));
         }
 
         Customer saved = customerRepository.save(customer);
@@ -126,12 +127,11 @@ public class CustomerService {
         customer.setTaxCode(request.getTaxCode());
         if (request.getIsActive() != null) customer.setIsActive(request.getIsActive());
 
-        if (request.getGroupId() != null) {
-            CustomerGroup group = customerGroupRepository.findById(request.getGroupId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Nhóm khách hàng", "id", request.getGroupId()));
-            customer.setGroup(group);
-        } else {
-            customer.setGroup(null);
+        if (request.getGroupName() != null && !request.getGroupName().trim().isEmpty()) {
+            customer.setGroupName(request.getGroupName().trim());
+        }
+        if (request.getDiscountPercent() != null) {
+            customer.setDiscountPercent(request.getDiscountPercent());
         }
 
         Customer saved = customerRepository.save(customer);
@@ -202,13 +202,19 @@ public class CustomerService {
         dto.setEmail(c.getEmail());
         dto.setAddress(c.getAddress());
         dto.setTaxCode(c.getTaxCode());
-        if (c.getGroup() != null) {
-            dto.setGroupId(c.getGroup().getId());
-            dto.setGroupName(c.getGroup().getName());
-            dto.setGroupDiscountPercent(c.getGroup().getDiscountPercent());
-        }
+        dto.setGroupName(c.getGroupName());
+        dto.setDiscountPercent(c.getDiscountPercent() != null ? c.getDiscountPercent() : BigDecimal.ZERO);
+        dto.setGroupDiscountPercent(dto.getDiscountPercent());
         dto.setIsActive(c.getIsActive());
         dto.setCreatedAt(c.getCreatedAt());
         return dto;
+    }
+
+    private BigDecimal getDefaultDiscountForGroup(String groupName) {
+        if (groupName == null) return BigDecimal.ZERO;
+        if (groupName.contains("VIP")) return new BigDecimal("10.00");
+        if (groupName.contains("Buôn") || groupName.contains("Sỉ") || groupName.contains("Đại Lý")) return new BigDecimal("15.00");
+        if (groupName.contains("Thân Thiết")) return new BigDecimal("5.00");
+        return BigDecimal.ZERO;
     }
 }

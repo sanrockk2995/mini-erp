@@ -7,9 +7,7 @@ import com.erp.modules.product.dto.ProductDto;
 import com.erp.modules.product.dto.ProductRequest;
 import com.erp.modules.product.entity.Category;
 import com.erp.modules.product.entity.Product;
-import com.erp.modules.product.entity.ProductAttribute;
 import com.erp.modules.product.repository.CategoryRepository;
-import com.erp.modules.product.repository.ProductAttributeRepository;
 import com.erp.modules.product.repository.ProductRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,24 +16,20 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final ProductAttributeRepository attributeRepository;
 
     public ProductService(ProductRepository productRepository,
-                          CategoryRepository categoryRepository,
-                          ProductAttributeRepository attributeRepository) {
+                          CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
-        this.attributeRepository = attributeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -97,6 +91,10 @@ public class ProductService {
         product.setUnit(request.getUnit() != null ? request.getUnit() : "Cái");
         product.setStandardCost(request.getStandardCost());
         product.setStandardPrice(request.getStandardPrice());
+        product.setWholesalePrice(request.getWholesalePrice() != null ? request.getWholesalePrice() : BigDecimal.ZERO);
+        product.setColor(request.getColor());
+        product.setSize(request.getSize());
+        product.setMaterial(request.getMaterial());
         product.setDescription(request.getDescription());
         product.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
 
@@ -104,21 +102,10 @@ public class ProductService {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Danh mục", "id", request.getCategoryId()));
             product.setCategory(category);
+            product.setCategoryName(category.getName());
         }
 
         Product saved = productRepository.save(product);
-
-        if (request.getAttributes() != null && !request.getAttributes().isEmpty()) {
-            List<ProductAttribute> attributes = new ArrayList<>();
-            for (Map.Entry<String, String> entry : request.getAttributes().entrySet()) {
-                if (entry.getValue() != null && !entry.getValue().trim().isEmpty()) {
-                    attributes.add(new ProductAttribute(saved, entry.getKey(), entry.getValue()));
-                }
-            }
-            attributeRepository.saveAll(attributes);
-            saved.setAttributes(attributes);
-        }
-
         return mapToDto(saved);
     }
 
@@ -137,6 +124,10 @@ public class ProductService {
         product.setUnit(request.getUnit() != null ? request.getUnit() : "Cái");
         product.setStandardCost(request.getStandardCost());
         product.setStandardPrice(request.getStandardPrice());
+        if (request.getWholesalePrice() != null) product.setWholesalePrice(request.getWholesalePrice());
+        product.setColor(request.getColor());
+        product.setSize(request.getSize());
+        product.setMaterial(request.getMaterial());
         product.setDescription(request.getDescription());
         if (request.getIsActive() != null) product.setIsActive(request.getIsActive());
 
@@ -144,23 +135,10 @@ public class ProductService {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Danh mục", "id", request.getCategoryId()));
             product.setCategory(category);
+            product.setCategoryName(category.getName());
         } else {
             product.setCategory(null);
-        }
-
-        // Cập nhật attributes
-        attributeRepository.deleteByProductId(id);
-        if (request.getAttributes() != null && !request.getAttributes().isEmpty()) {
-            List<ProductAttribute> attributes = new ArrayList<>();
-            for (Map.Entry<String, String> entry : request.getAttributes().entrySet()) {
-                if (entry.getValue() != null && !entry.getValue().trim().isEmpty()) {
-                    attributes.add(new ProductAttribute(product, entry.getKey(), entry.getValue()));
-                }
-            }
-            attributeRepository.saveAll(attributes);
-            product.setAttributes(attributes);
-        } else {
-            product.setAttributes(new ArrayList<>());
+            product.setCategoryName(null);
         }
 
         Product saved = productRepository.save(product);
@@ -183,22 +161,20 @@ public class ProductService {
         if (p.getCategory() != null) {
             dto.setCategoryId(p.getCategory().getId());
             dto.setCategoryName(p.getCategory().getName());
+        } else if (p.getCategoryName() != null) {
+            dto.setCategoryName(p.getCategoryName());
         }
         dto.setUnit(p.getUnit());
+        dto.setColor(p.getColor());
+        dto.setSize(p.getSize());
+        dto.setMaterial(p.getMaterial());
         dto.setStandardCost(p.getStandardCost());
         dto.setStandardPrice(p.getStandardPrice());
+        dto.setWholesalePrice(p.getWholesalePrice() != null ? p.getWholesalePrice() : BigDecimal.ZERO);
         dto.setDescription(p.getDescription());
         dto.setIsActive(p.getIsActive());
         dto.setCreatedAt(p.getCreatedAt());
         dto.setUpdatedAt(p.getUpdatedAt());
-
-        Map<String, String> attrs = new HashMap<>();
-        if (p.getAttributes() != null) {
-            for (ProductAttribute attr : p.getAttributes()) {
-                attrs.put(attr.getAttrKey(), attr.getAttrValue());
-            }
-        }
-        dto.setAttributes(attrs);
 
         return dto;
     }

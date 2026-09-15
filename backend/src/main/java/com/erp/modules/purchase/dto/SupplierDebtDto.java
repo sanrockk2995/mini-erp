@@ -18,6 +18,11 @@ public class SupplierDebtDto {
     private BigDecimal paidAmount;
     private BigDecimal remainingAmount;
     private String status;
+    private String paymentMethod;
+    private String paymentReference;
+    private LocalDate lastPaymentDate;
+    private String paymentNotes;
+    private String paidBy;
     private LocalDateTime createdAt;
 
     public SupplierDebtDto() {}
@@ -48,6 +53,16 @@ public class SupplierDebtDto {
     public void setRemainingAmount(BigDecimal remainingAmount) { this.remainingAmount = remainingAmount; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public String getPaymentReference() { return paymentReference; }
+    public void setPaymentReference(String paymentReference) { this.paymentReference = paymentReference; }
+    public LocalDate getLastPaymentDate() { return lastPaymentDate; }
+    public void setLastPaymentDate(LocalDate lastPaymentDate) { this.lastPaymentDate = lastPaymentDate; }
+    public String getPaymentNotes() { return paymentNotes; }
+    public void setPaymentNotes(String paymentNotes) { this.paymentNotes = paymentNotes; }
+    public String getPaidBy() { return paidBy; }
+    public void setPaidBy(String paidBy) { this.paidBy = paidBy; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -1,91 +1,65 @@
 package com.erp.modules.customer.service;
 
-import com.erp.exception.AppException;
-import com.erp.exception.ResourceNotFoundException;
 import com.erp.modules.customer.dto.CustomerGroupDto;
 import com.erp.modules.customer.dto.CustomerGroupRequest;
-import com.erp.modules.customer.entity.CustomerGroup;
-import com.erp.modules.customer.repository.CustomerGroupRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class CustomerGroupService {
 
-    private final CustomerGroupRepository customerGroupRepository;
+    private final ConcurrentHashMap<Long, CustomerGroupDto> virtualGroups = new ConcurrentHashMap<>();
+    private final AtomicLong idGenerator = new AtomicLong(3);
 
-    public CustomerGroupService(CustomerGroupRepository customerGroupRepository) {
-        this.customerGroupRepository = customerGroupRepository;
+    public CustomerGroupService() {
+        virtualGroups.put(1L, new CustomerGroupDto(1L, "RETAIL", "Khách Hàng Mua Lẻ", new BigDecimal("0.00"), "Khách hàng mua lẻ vãng lai, giá niêm yết"));
+        virtualGroups.put(2L, new CustomerGroupDto(2L, "VIP", "Khách Hàng Thân Thiết VIP", new BigDecimal("10.00"), "Khách hàng VIP, chiết khấu 10%"));
+        virtualGroups.put(3L, new CustomerGroupDto(3L, "WHOLESALE", "Khách Hàng Mua Buôn / Đại Lý", new BigDecimal("15.00"), "Đại lý phân phối sỉ thời trang, chiết khấu 15%"));
     }
 
-    @Transactional(readOnly = true)
     public List<CustomerGroupDto> getAll() {
-        List<CustomerGroup> list = customerGroupRepository.findAll();
-        List<CustomerGroupDto> dtos = new ArrayList<>();
-        for (CustomerGroup g : list) {
-            dtos.add(mapToDto(g));
-        }
-        return dtos;
+        return new ArrayList<>(virtualGroups.values());
     }
 
-    @Transactional(readOnly = true)
     public CustomerGroupDto getById(Long id) {
-        CustomerGroup group = customerGroupRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Nhóm khách hàng", "id", id));
-        return mapToDto(group);
+        CustomerGroupDto group = virtualGroups.get(id);
+        if (group == null) {
+            return new CustomerGroupDto(id, "GROUP-" + id, "Nhóm Khách Hàng " + id, BigDecimal.ZERO, "Nhóm khách hàng");
+        }
+        return group;
     }
 
-    @Transactional
     public CustomerGroupDto create(CustomerGroupRequest request) {
-        if (customerGroupRepository.existsByCode(request.getCode())) {
-            throw new AppException(400, "Mã nhóm khách hàng đã tồn tại: " + request.getCode());
-        }
-
-        CustomerGroup group = new CustomerGroup();
-        group.setCode(request.getCode());
-        group.setName(request.getName());
-        group.setDiscountPercent(request.getDiscountPercent());
-        group.setDescription(request.getDescription());
-
-        CustomerGroup saved = customerGroupRepository.save(group);
-        return mapToDto(saved);
-    }
-
-    @Transactional
-    public CustomerGroupDto update(Long id, CustomerGroupRequest request) {
-        CustomerGroup group = customerGroupRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Nhóm khách hàng", "id", id));
-
-        if (!group.getCode().equals(request.getCode()) && customerGroupRepository.existsByCode(request.getCode())) {
-            throw new AppException(400, "Mã nhóm khách hàng đã tồn tại: " + request.getCode());
-        }
-
-        group.setCode(request.getCode());
-        group.setName(request.getName());
-        group.setDiscountPercent(request.getDiscountPercent());
-        group.setDescription(request.getDescription());
-
-        CustomerGroup saved = customerGroupRepository.save(group);
-        return mapToDto(saved);
-    }
-
-    @Transactional
-    public void delete(Long id) {
-        CustomerGroup group = customerGroupRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Nhóm khách hàng", "id", id));
-        customerGroupRepository.delete(group);
-    }
-
-    private CustomerGroupDto mapToDto(CustomerGroup g) {
-        return new CustomerGroupDto(
-                g.getId(),
-                g.getCode(),
-                g.getName(),
-                g.getDiscountPercent(),
-                g.getDescription()
+        long id = idGenerator.incrementAndGet();
+        CustomerGroupDto dto = new CustomerGroupDto(
+                id,
+                request.getCode(),
+                request.getName(),
+                request.getDiscountPercent() != null ? request.getDiscountPercent() : BigDecimal.ZERO,
+                request.getDescription()
         );
+        virtualGroups.put(id, dto);
+        return dto;
+    }
+
+    public CustomerGroupDto update(Long id, CustomerGroupRequest request) {
+        CustomerGroupDto dto = new CustomerGroupDto(
+                id,
+                request.getCode(),
+                request.getName(),
+                request.getDiscountPercent() != null ? request.getDiscountPercent() : BigDecimal.ZERO,
+                request.getDescription()
+        );
+        virtualGroups.put(id, dto);
+        return dto;
+    }
+
+    public void delete(Long id) {
+        virtualGroups.remove(id);
     }
 }

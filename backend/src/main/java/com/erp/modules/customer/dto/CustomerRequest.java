@@ -1,6 +1,7 @@
 package com.erp.modules.customer.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 
 public class CustomerRequest {
     @NotBlank(message = "Mã khách hàng không được để trống")
@@ -15,6 +16,8 @@ public class CustomerRequest {
     private String address;
     private String taxCode;
     private Long groupId;
+    private String groupName;
+    private BigDecimal discountPercent;
     private Boolean isActive = true;
 
     public CustomerRequest() {}
@@ -35,6 +38,10 @@ public class CustomerRequest {
     public void setTaxCode(String taxCode) { this.taxCode = taxCode; }
     public Long getGroupId() { return groupId; }
     public void setGroupId(Long groupId) { this.groupId = groupId; }
+    public String getGroupName() { return groupName; }
+    public void setGroupName(String groupName) { this.groupName = groupName; }
+    public BigDecimal getDiscountPercent() { return discountPercent; }
+    public void setDiscountPercent(BigDecimal discountPercent) { this.discountPercent = discountPercent; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 }

@@ -2,11 +2,12 @@
 -- MINI-ERP CLOTHING & APPAREL DATABASE SCHEMA (MySQL 8+)
 -- Database: erp_db
 -- Hệ thống Quản trị Doanh nghiệp Dệt may & Bán lẻ Thời trang
--- Kiến trúc: Core-FK (Ràng buộc Khóa ngoại Cốt lõi) & Flat Read Model
+-- Kiến trúc: Core-FK & Flat Read Model (Tối ưu hợp nhất 21 bảng)
 -- Giữ các liên kết chính: RBAC, Cây danh mục, Chi tiết dòng đơn hàng,
 -- Tồn kho, Sổ cái, Đơn mua, Công nợ, Nhập/Xuất kho.
--- Tối ưu truy vấn: Lưu trữ denormalized (tên khách, tên NCC, tên kho,
--- SKU, tên SP) để truy vấn danh sách/báo cáo phẳng, nhanh, hạn chế JOIN.
+-- Tối ưu truy vấn: Hợp nhất các bảng phân mảnh (customer_groups, product_attributes,
+-- price_lists, sales_order_status_history, supplier_reviews, supplier_payments)
+-- vào các bảng chính tương ứng, loại bỏ JOIN dư thừa, bảo toàn toàn vẹn dữ liệu.
 -- ====================================================================
 
 SET NAMES utf8mb4;
@@ -20,20 +21,13 @@ DROP TABLE IF EXISTS goods_receipt_notes;
 DROP TABLE IF EXISTS stock_ledger;
 DROP TABLE IF EXISTS inventory;
 DROP TABLE IF EXISTS warehouses;
-DROP TABLE IF EXISTS supplier_payments;
 DROP TABLE IF EXISTS supplier_debts;
 DROP TABLE IF EXISTS purchase_order_items;
 DROP TABLE IF EXISTS purchase_orders;
-DROP TABLE IF EXISTS supplier_reviews;
 DROP TABLE IF EXISTS suppliers;
-DROP TABLE IF EXISTS sales_order_status_history;
 DROP TABLE IF EXISTS sales_order_items;
 DROP TABLE IF EXISTS sales_orders;
-DROP TABLE IF EXISTS price_list_items;
-DROP TABLE IF EXISTS price_lists;
 DROP TABLE IF EXISTS customers;
-DROP TABLE IF EXISTS customer_groups;
-DROP TABLE IF EXISTS product_attributes;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS role_permissions;
@@ -95,7 +89,8 @@ CREATE TABLE role_permissions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
--- 2. PRODUCT & CATEGORY (Danh mục & Sản phẩm Thời trang)
+-- 2. PRODUCT & CATEGORY (Danh mục & Sản phẩm Thời trang Hợp nhất)
+-- Thuộc tính (màu, size, chất liệu) và giá sỉ được gộp trực tiếp vào products
 -- --------------------------------------------------------------------
 
 CREATE TABLE categories (
@@ -119,8 +114,12 @@ CREATE TABLE products (
     category_id BIGINT,
     category_name VARCHAR(100),
     unit VARCHAR(20) NOT NULL DEFAULT 'Cái',
+    color VARCHAR(50),
+    size VARCHAR(50),
+    material VARCHAR(100),
     standard_cost DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     standard_price DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    wholesale_price DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     description TEXT,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -129,28 +128,10 @@ CREATE TABLE products (
     INDEX idx_prod_category (category_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE product_attributes (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    product_id BIGINT NOT NULL,
-    attr_key VARCHAR(50) NOT NULL,   -- Size, Màu sắc, Chất liệu, Form dáng
-    attr_value VARCHAR(255) NOT NULL,
-    CONSTRAINT fk_attr_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    INDEX idx_attr_product (product_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- --------------------------------------------------------------------
--- 3. CUSTOMER & PRICE LIST (Khách hàng & Bảng giá Thời trang)
+-- 3. CUSTOMER (Khách hàng Hợp nhất)
+-- Nhóm khách hàng và % chiết khấu được gộp trực tiếp vào bảng customers
 -- --------------------------------------------------------------------
-
-CREATE TABLE customer_groups (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(100) NOT NULL,
-    discount_percent DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
-    description VARCHAR(255),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE customers (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -161,37 +142,12 @@ CREATE TABLE customers (
     email VARCHAR(100),
     address VARCHAR(255),
     tax_code VARCHAR(50),
-    group_id BIGINT,
-    group_name VARCHAR(100),
+    group_name VARCHAR(100) DEFAULT 'Khách Hàng Mua Lẻ',
+    discount_percent DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_cust_group FOREIGN KEY (group_id) REFERENCES customer_groups(id) ON DELETE SET NULL,
-    INDEX idx_cust_group (group_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE price_lists (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name VARCHAR(100) NOT NULL,
-    customer_group_id BIGINT,
-    start_date DATE NOT NULL,
-    end_date DATE,
-    is_active TINYINT(1) NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_pl_group FOREIGN KEY (customer_group_id) REFERENCES customer_groups(id) ON DELETE SET NULL,
-    INDEX idx_pl_group (customer_group_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE price_list_items (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    price_list_id BIGINT NOT NULL,
-    product_id BIGINT NOT NULL,
-    unit_price DECIMAL(15, 2) NOT NULL,
-    CONSTRAINT fk_pli_pricelist FOREIGN KEY (price_list_id) REFERENCES price_lists(id) ON DELETE CASCADE,
-    CONSTRAINT fk_pli_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    UNIQUE KEY uk_pli_pl_prod (price_list_id, product_id)
+    INDEX idx_cust_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
@@ -253,7 +209,8 @@ CREATE TABLE stock_ledger (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
--- 5. SALES ORDER (Đơn Bán hàng Thời trang)
+-- 5. SALES ORDER (Đơn Bán hàng Thời trang Hợp nhất)
+-- Lịch sử chuyển trạng thái lưu trực tiếp trong status_history (JSON)
 -- --------------------------------------------------------------------
 
 CREATE TABLE sales_orders (
@@ -272,9 +229,13 @@ CREATE TABLE sales_orders (
     discount_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     total_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+    status_history JSON,
     created_by VARCHAR(50) NOT NULL,
     approved_by VARCHAR(50),
     approved_at TIMESTAMP NULL,
+    cancelled_by VARCHAR(50),
+    cancelled_at TIMESTAMP NULL,
+    status_note VARCHAR(255),
     notes TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -300,20 +261,10 @@ CREATE TABLE sales_order_items (
     INDEX idx_soi_order (sales_order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE sales_order_status_history (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    sales_order_id BIGINT NOT NULL,
-    from_status VARCHAR(30),
-    to_status VARCHAR(30) NOT NULL,
-    note VARCHAR(255),
-    changed_by VARCHAR(50) NOT NULL,
-    changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_sosh_order FOREIGN KEY (sales_order_id) REFERENCES sales_orders(id) ON DELETE CASCADE,
-    INDEX idx_sosh_order (sales_order_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- --------------------------------------------------------------------
--- 6. SUPPLIER & PURCHASING (Nhà cung cấp Dệt may & Đơn mua hàng)
+-- 6. SUPPLIER & PURCHASING (Nhà cung cấp & Đơn mua hàng Hợp nhất)
+-- Đánh giá/Xếp hạng NCC lưu trực tiếp trong suppliers;
+-- Thanh toán chi trả gộp trực tiếp vào supplier_debts
 -- --------------------------------------------------------------------
 
 CREATE TABLE suppliers (
@@ -325,26 +276,16 @@ CREATE TABLE suppliers (
     address VARCHAR(255),
     tax_code VARCHAR(50),
     product_groups VARCHAR(255),
+    quality_score DECIMAL(3, 1) NOT NULL DEFAULT 0.0,
+    delivery_score DECIMAL(3, 1) NOT NULL DEFAULT 0.0,
+    price_score DECIMAL(3, 1) NOT NULL DEFAULT 0.0,
     rating_score DECIMAL(3, 1) NOT NULL DEFAULT 0.0,
     rating_tier VARCHAR(10) NOT NULL DEFAULT 'B',
+    review_date DATE,
+    review_notes TEXT,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE supplier_reviews (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    supplier_id BIGINT NOT NULL,
-    review_date DATE NOT NULL,
-    quality_score DECIMAL(3, 1) NOT NULL,
-    delivery_score DECIMAL(3, 1) NOT NULL,
-    price_score DECIMAL(3, 1) NOT NULL,
-    average_score DECIMAL(3, 1) NOT NULL,
-    reviewer_id BIGINT,
-    comments TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_sr_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE,
-    INDEX idx_sr_supplier (supplier_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE purchase_orders (
@@ -403,31 +344,17 @@ CREATE TABLE supplier_debts (
     paid_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     remaining_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     status VARCHAR(20) NOT NULL DEFAULT 'UNPAID',
+    payment_method VARCHAR(30) DEFAULT 'BANK_TRANSFER',
+    payment_reference VARCHAR(100),
+    last_payment_date DATE,
+    payment_notes VARCHAR(255),
+    paid_by VARCHAR(50),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_sd_po FOREIGN KEY (po_id) REFERENCES purchase_orders(id) ON DELETE SET NULL,
     CONSTRAINT fk_sd_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
     INDEX idx_sd_supplier (supplier_id),
     INDEX idx_sd_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE supplier_payments (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    payment_code VARCHAR(50) NOT NULL UNIQUE,
-    debt_id BIGINT NOT NULL,
-    debt_invoice_code VARCHAR(50),
-    supplier_id BIGINT NOT NULL,
-    supplier_name VARCHAR(150),
-    payment_date DATE NOT NULL,
-    amount DECIMAL(15, 2) NOT NULL,
-    payment_method VARCHAR(30) NOT NULL DEFAULT 'BANK_TRANSFER',
-    reference_number VARCHAR(100),
-    notes VARCHAR(255),
-    created_by VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_sp_debt FOREIGN KEY (debt_id) REFERENCES supplier_debts(id) ON DELETE RESTRICT,
-    CONSTRAINT fk_sp_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
-    INDEX idx_sp_debt (debt_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------

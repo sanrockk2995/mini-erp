@@ -56,14 +56,23 @@ public class SalesOrder extends BaseEntity {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    @Column(name = "status_history", columnDefinition = "JSON")
+    private String statusHistory;
+
+    @Column(name = "cancelled_by", length = 50)
+    private String cancelledBy;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
+
+    @Column(name = "status_note", length = 255)
+    private String statusNote;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
     @OneToMany(mappedBy = "salesOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SalesOrderItem> items = new ArrayList<>();
-
-    @OneToMany(mappedBy = "salesOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SalesOrderStatusHistory> statusHistories = new ArrayList<>();
 
     public SalesOrder() {}
 
@@ -95,10 +104,16 @@ public class SalesOrder extends BaseEntity {
     public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+    public String getStatusHistory() { return statusHistory; }
+    public void setStatusHistory(String statusHistory) { this.statusHistory = statusHistory; }
+    public String getCancelledBy() { return cancelledBy; }
+    public void setCancelledBy(String cancelledBy) { this.cancelledBy = cancelledBy; }
+    public LocalDateTime getCancelledAt() { return cancelledAt; }
+    public void setCancelledAt(LocalDateTime cancelledAt) { this.cancelledAt = cancelledAt; }
+    public String getStatusNote() { return statusNote; }
+    public void setStatusNote(String statusNote) { this.statusNote = statusNote; }
     public List<SalesOrderItem> getItems() { return items; }
     public void setItems(List<SalesOrderItem> items) { this.items = items; }
-    public List<SalesOrderStatusHistory> getStatusHistories() { return statusHistories; }
-    public void setStatusHistories(List<SalesOrderStatusHistory> statusHistories) { this.statusHistories = statusHistories; }
 
     public void addItem(SalesOrderItem item) {
         items.add(item);

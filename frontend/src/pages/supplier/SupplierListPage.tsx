@@ -119,7 +119,12 @@ export const SupplierListPage: React.FC = () => {
   const handleOpenReview = async (sup: Supplier) => {
     setReviewSupplier(sup);
     reviewForm.resetFields();
-    reviewForm.setFieldsValue({ qualityScore: 8, deliveryScore: 8, priceScore: 8 });
+    reviewForm.setFieldsValue({
+      qualityScore: sup.qualityScore && sup.qualityScore > 0 ? sup.qualityScore : 8,
+      deliveryScore: sup.deliveryScore && sup.deliveryScore > 0 ? sup.deliveryScore : 8,
+      priceScore: sup.priceScore && sup.priceScore > 0 ? sup.priceScore : 8,
+      comments: sup.reviewNotes || '',
+    });
     try {
       const revs = await supplierService.getReviews(sup.id);
       setSupplierReviews(revs);
@@ -294,19 +299,26 @@ export const SupplierListPage: React.FC = () => {
       title: 'Điểm đánh giá',
       dataIndex: 'ratingScore',
       key: 'ratingScore',
-      width: 140,
+      width: 150,
       align: 'center' as const,
-      render: (score: number) => (
-        <span
-          className="tabular-nums"
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            color: score >= 8.5 ? '#D97706' : score >= 6.5 ? '#0284C7' : '#DC2626',
-          }}
-        >
-          {score ? score.toFixed(1) : '0.0'} <span style={{ fontSize: 11, fontWeight: 500, color: '#94A3B8' }}>/ 10</span>
-        </span>
+      render: (score: number, record: Supplier) => (
+        <div>
+          <span
+            className="tabular-nums"
+            style={{
+              fontSize: 14,
+              fontWeight: 800,
+              color: score >= 8.5 ? '#D97706' : score >= 6.5 ? '#0284C7' : '#DC2626',
+            }}
+          >
+            {score ? score.toFixed(1) : '0.0'} <span style={{ fontSize: 11, fontWeight: 500, color: '#94A3B8' }}>/ 10</span>
+          </span>
+          {record.reviewDate && (
+            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>
+              ĐG: {record.reviewDate}
+            </div>
+          )}
+        </div>
       ),
     },
     {

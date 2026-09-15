@@ -20,10 +20,10 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
            "(:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(c.code) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND (:groupId IS NULL OR c.group.id = :groupId) " +
+           "AND (:groupName IS NULL OR c.groupName = :groupName) " +
            "AND (:isActive IS NULL OR c.isActive = :isActive)")
     Page<Customer> searchCustomers(@Param("keyword") String keyword,
-                                   @Param("groupId") Long groupId,
+                                   @Param("groupName") String groupName,
                                    @Param("isActive") Boolean isActive,
                                    Pageable pageable);
 

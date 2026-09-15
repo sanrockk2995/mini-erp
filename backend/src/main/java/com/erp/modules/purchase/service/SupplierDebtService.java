@@ -8,9 +8,7 @@ import com.erp.modules.purchase.dto.SupplierPaymentDto;
 import com.erp.modules.purchase.dto.SupplierPaymentRequest;
 import com.erp.modules.purchase.entity.PurchaseOrder;
 import com.erp.modules.purchase.entity.SupplierDebt;
-import com.erp.modules.purchase.entity.SupplierPayment;
 import com.erp.modules.purchase.repository.SupplierDebtRepository;
-import com.erp.modules.purchase.repository.SupplierPaymentRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,12 +27,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public class SupplierDebtService {
 
     private final SupplierDebtRepository debtRepository;
-    private final SupplierPaymentRepository paymentRepository;
 
-    public SupplierDebtService(SupplierDebtRepository debtRepository,
-                               SupplierPaymentRepository paymentRepository) {
+    public SupplierDebtService(SupplierDebtRepository debtRepository) {
         this.debtRepository = debtRepository;
-        this.paymentRepository = paymentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -99,39 +94,32 @@ public class SupplierDebtService {
                     request.getAmount(), debt.getRemainingAmount()));
         }
 
-        SupplierPayment payment = new SupplierPayment();
-        payment.setPaymentCode(generatePaymentCode());
-        payment.setDebt(debt);
-        payment.setSupplier(debt.getSupplier());
-        payment.setPaymentDate(request.getPaymentDate() != null ? request.getPaymentDate() : LocalDate.now());
-        payment.setAmount(request.getAmount());
-        payment.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "BANK_TRANSFER");
-        payment.setReferenceNumber(request.getReferenceNumber());
-        payment.setNotes(request.getNotes());
-        payment.setCreatedBy(username != null ? username : "SYSTEM");
-
-        SupplierPayment savedPayment = paymentRepository.save(payment);
-
-        // Cập nhật công nợ
+        // Cập nhật công nợ và ghi nhận thanh toán trực tiếp (Zero-Join Model)
         debt.setPaidAmount(debt.getPaidAmount().add(request.getAmount()));
         debt.setRemainingAmount(debt.getTotalAmount().subtract(debt.getPaidAmount()));
+        debt.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "BANK_TRANSFER");
+        debt.setPaymentReference(request.getReferenceNumber());
+        debt.setLastPaymentDate(request.getPaymentDate() != null ? request.getPaymentDate() : LocalDate.now());
+        debt.setPaymentNotes(request.getNotes());
+        debt.setPaidBy(username != null ? username : "SYSTEM");
 
         if (debt.getRemainingAmount().compareTo(BigDecimal.ZERO) == 0) {
             debt.setStatus("PAID");
         } else {
             debt.setStatus("PARTIAL");
         }
-        debtRepository.save(debt);
+        SupplierDebt savedDebt = debtRepository.save(debt);
 
-        return mapToPaymentDto(savedPayment);
+        return mapToPaymentDto(savedDebt, request.getAmount());
     }
 
     @Transactional(readOnly = true)
     public List<SupplierPaymentDto> getPaymentsByDebt(Long debtId) {
-        List<SupplierPayment> list = paymentRepository.findByDebtIdOrderByPaymentDateDesc(debtId);
+        SupplierDebt debt = debtRepository.findById(debtId)
+                .orElseThrow(() -> new ResourceNotFoundException("Công nợ", "id", debtId));
         List<SupplierPaymentDto> dtos = new ArrayList<>();
-        for (SupplierPayment p : list) {
-            dtos.add(mapToPaymentDto(p));
+        if (debt.getPaidAmount() != null && debt.getPaidAmount().compareTo(BigDecimal.ZERO) > 0) {
+            dtos.add(mapToPaymentDto(debt, debt.getPaidAmount()));
         }
         return dtos;
     }
@@ -143,17 +131,6 @@ public class SupplierDebtService {
         while (debtRepository.existsByInvoiceCode(code)) {
             rand = ThreadLocalRandom.current().nextInt(100, 999);
             code = "INV-" + datePart + "-" + rand;
-        }
-        return code;
-    }
-
-    private String generatePaymentCode() {
-        String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        int rand = ThreadLocalRandom.current().nextInt(1000, 9999);
-        String code = "PAY-" + datePart + "-" + rand;
-        while (paymentRepository.existsByPaymentCode(code)) {
-            rand = ThreadLocalRandom.current().nextInt(1000, 9999);
-            code = "PAY-" + datePart + "-" + rand;
         }
         return code;
     }
@@ -175,26 +152,31 @@ public class SupplierDebtService {
         dto.setPaidAmount(debt.getPaidAmount());
         dto.setRemainingAmount(debt.getRemainingAmount());
         dto.setStatus(debt.getStatus());
+        dto.setPaymentMethod(debt.getPaymentMethod());
+        dto.setPaymentReference(debt.getPaymentReference());
+        dto.setLastPaymentDate(debt.getLastPaymentDate());
+        dto.setPaymentNotes(debt.getPaymentNotes());
+        dto.setPaidBy(debt.getPaidBy());
         dto.setCreatedAt(debt.getCreatedAt());
         return dto;
     }
 
-    public SupplierPaymentDto mapToPaymentDto(SupplierPayment p) {
+    public SupplierPaymentDto mapToPaymentDto(SupplierDebt debt, BigDecimal amount) {
         SupplierPaymentDto dto = new SupplierPaymentDto();
-        dto.setId(p.getId());
-        dto.setPaymentCode(p.getPaymentCode());
-        dto.setDebtId(p.getDebt().getId());
-        dto.setInvoiceCode(p.getDebt().getInvoiceCode());
-        dto.setSupplierId(p.getSupplier().getId());
-        dto.setSupplierCode(p.getSupplier().getCode());
-        dto.setSupplierName(p.getSupplier().getName());
-        dto.setPaymentDate(p.getPaymentDate());
-        dto.setAmount(p.getAmount());
-        dto.setPaymentMethod(p.getPaymentMethod());
-        dto.setReferenceNumber(p.getReferenceNumber());
-        dto.setNotes(p.getNotes());
-        dto.setCreatedBy(p.getCreatedBy());
-        dto.setCreatedAt(p.getCreatedAt());
+        dto.setId(debt.getId());
+        dto.setPaymentCode(debt.getPaymentReference() != null ? debt.getPaymentReference() : "PAY-" + debt.getInvoiceCode());
+        dto.setDebtId(debt.getId());
+        dto.setInvoiceCode(debt.getInvoiceCode());
+        dto.setSupplierId(debt.getSupplier().getId());
+        dto.setSupplierCode(debt.getSupplier().getCode());
+        dto.setSupplierName(debt.getSupplier().getName());
+        dto.setPaymentDate(debt.getLastPaymentDate() != null ? debt.getLastPaymentDate() : LocalDate.now());
+        dto.setAmount(amount != null ? amount : debt.getPaidAmount());
+        dto.setPaymentMethod(debt.getPaymentMethod() != null ? debt.getPaymentMethod() : "BANK_TRANSFER");
+        dto.setReferenceNumber(debt.getPaymentReference());
+        dto.setNotes(debt.getPaymentNotes());
+        dto.setCreatedBy(debt.getPaidBy() != null ? debt.getPaidBy() : "SYSTEM");
+        dto.setCreatedAt(debt.getUpdatedAt() != null ? debt.getUpdatedAt() : debt.getCreatedAt());
         return dto;
     }
 }

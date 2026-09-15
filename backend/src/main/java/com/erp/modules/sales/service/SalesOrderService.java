@@ -10,10 +10,11 @@ import com.erp.modules.product.repository.ProductRepository;
 import com.erp.modules.sales.dto.*;
 import com.erp.modules.sales.entity.SalesOrder;
 import com.erp.modules.sales.entity.SalesOrderItem;
-import com.erp.modules.sales.entity.SalesOrderStatusHistory;
 import com.erp.modules.sales.repository.SalesOrderItemRepository;
 import com.erp.modules.sales.repository.SalesOrderRepository;
-import com.erp.modules.sales.repository.SalesOrderStatusHistoryRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.erp.modules.warehouse.entity.GoodsIssueItem;
 import com.erp.modules.warehouse.entity.GoodsIssueNote;
 import com.erp.modules.warehouse.entity.Warehouse;
@@ -42,16 +43,15 @@ public class SalesOrderService {
 
     private final SalesOrderRepository salesOrderRepository;
     private final SalesOrderItemRepository salesOrderItemRepository;
-    private final SalesOrderStatusHistoryRepository statusHistoryRepository;
     private final CustomerRepository customerRepository;
     private final WarehouseRepository warehouseRepository;
     private final ProductRepository productRepository;
     private final InventoryService inventoryService;
     private final GoodsIssueNoteRepository goodsIssueNoteRepository;
+    private final ObjectMapper objectMapper;
 
     public SalesOrderService(SalesOrderRepository salesOrderRepository,
                              SalesOrderItemRepository salesOrderItemRepository,
-                             SalesOrderStatusHistoryRepository statusHistoryRepository,
                              CustomerRepository customerRepository,
                              WarehouseRepository warehouseRepository,
                              ProductRepository productRepository,
@@ -59,12 +59,12 @@ public class SalesOrderService {
                              GoodsIssueNoteRepository goodsIssueNoteRepository) {
         this.salesOrderRepository = salesOrderRepository;
         this.salesOrderItemRepository = salesOrderItemRepository;
-        this.statusHistoryRepository = statusHistoryRepository;
         this.customerRepository = customerRepository;
         this.warehouseRepository = warehouseRepository;
         this.productRepository = productRepository;
         this.inventoryService = inventoryService;
         this.goodsIssueNoteRepository = goodsIssueNoteRepository;
+        this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     }
 
     @Transactional(readOnly = true)
@@ -145,11 +145,9 @@ public class SalesOrderService {
 
         SalesOrder saved = salesOrderRepository.save(order);
 
-        // Lưu lịch sử trạng thái ban đầu
-        SalesOrderStatusHistory history = new SalesOrderStatusHistory(
-                saved, null, "DRAFT", "Tạo đơn hàng mới", order.getCreatedBy()
-        );
-        statusHistoryRepository.save(history);
+        // Lưu lịch sử trạng thái ban đầu trực tiếp vào status_history JSON
+        addStatusHistory(saved, null, "DRAFT", "Tạo đơn hàng mới", order.getCreatedBy());
+        saved = salesOrderRepository.save(saved);
 
         return mapToDetailDto(saved);
     }
@@ -172,13 +170,8 @@ public class SalesOrderService {
         order.setStatus("APPROVED");
         order.setApprovedBy(username != null ? username : "SYSTEM");
         order.setApprovedAt(LocalDateTime.now());
+        addStatusHistory(order, oldStatus, "APPROVED", "Duyệt đơn hàng và tự động giữ chỗ kho", username);
         salesOrderRepository.save(order);
-
-        // Ghi nhận lịch sử chuyển trạng thái
-        SalesOrderStatusHistory history = new SalesOrderStatusHistory(
-                order, oldStatus, "APPROVED", "Duyệt đơn hàng và tự động giữ chỗ kho", username
-        );
-        statusHistoryRepository.save(history);
 
         // Tự động sinh Phiếu xuất kho (GoodsIssueNote) ở trạng thái DRAFT
         GoodsIssueNote gin = new GoodsIssueNote();
@@ -237,12 +230,11 @@ public class SalesOrderService {
 
         String oldStatus = order.getStatus();
         order.setStatus("CANCELLED");
+        order.setCancelledBy(username != null ? username : "SYSTEM");
+        order.setCancelledAt(LocalDateTime.now());
+        order.setStatusNote(note != null ? note : "Hủy đơn hàng");
+        addStatusHistory(order, oldStatus, "CANCELLED", note != null ? note : "Hủy đơn hàng", username);
         salesOrderRepository.save(order);
-
-        SalesOrderStatusHistory history = new SalesOrderStatusHistory(
-                order, oldStatus, "CANCELLED", note != null ? note : "Hủy đơn hàng", username
-        );
-        statusHistoryRepository.save(history);
 
         return mapToDetailDto(order);
     }
@@ -265,12 +257,8 @@ public class SalesOrderService {
         }
 
         order.setStatus(newStatus);
+        addStatusHistory(order, oldStatus, newStatus, dto.getNote(), username);
         salesOrderRepository.save(order);
-
-        SalesOrderStatusHistory history = new SalesOrderStatusHistory(
-                order, oldStatus, newStatus, dto.getNote(), username
-        );
-        statusHistoryRepository.save(history);
 
         return mapToDetailDto(order);
     }
@@ -343,20 +331,38 @@ public class SalesOrderService {
         }
         dto.setItems(itemDtos);
 
-        List<SalesOrderStatusHistoryDto> histDtos = new ArrayList<>();
-        List<SalesOrderStatusHistory> histories = statusHistoryRepository.findBySalesOrderIdOrderByChangedAtAsc(order.getId());
-        for (SalesOrderStatusHistory h : histories) {
-            SalesOrderStatusHistoryDto hDto = new SalesOrderStatusHistoryDto();
-            hDto.setId(h.getId());
-            hDto.setFromStatus(h.getFromStatus());
-            hDto.setToStatus(h.getToStatus());
-            hDto.setNote(h.getNote());
-            hDto.setChangedBy(h.getChangedBy());
-            hDto.setChangedAt(h.getChangedAt());
-            histDtos.add(hDto);
-        }
+        List<SalesOrderStatusHistoryDto> histDtos = parseStatusHistory(order.getStatusHistory());
         dto.setStatusHistories(histDtos);
 
         return dto;
+    }
+
+    private void addStatusHistory(SalesOrder order, String fromStatus, String toStatus, String note, String username) {
+        List<SalesOrderStatusHistoryDto> list = parseStatusHistory(order.getStatusHistory());
+        SalesOrderStatusHistoryDto entry = new SalesOrderStatusHistoryDto();
+        entry.setId((long) (list.size() + 1));
+        entry.setFromStatus(fromStatus);
+        entry.setToStatus(toStatus);
+        entry.setNote(note);
+        entry.setChangedBy(username != null ? username : "SYSTEM");
+        entry.setChangedAt(LocalDateTime.now());
+        list.add(entry);
+
+        try {
+            order.setStatusHistory(objectMapper.writeValueAsString(list));
+        } catch (Exception e) {
+            order.setStatusHistory("[]");
+        }
+    }
+
+    private List<SalesOrderStatusHistoryDto> parseStatusHistory(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<SalesOrderStatusHistoryDto>>() {});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.erp.modules.supplier.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class SupplierDto {
@@ -12,8 +13,13 @@ public class SupplierDto {
     private String address;
     private String taxCode;
     private String productGroups;
+    private BigDecimal qualityScore;
+    private BigDecimal deliveryScore;
+    private BigDecimal priceScore;
     private BigDecimal ratingScore;
     private String ratingTier;
+    private LocalDate reviewDate;
+    private String reviewNotes;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private BigDecimal currentDebt;
@@ -36,10 +42,20 @@ public class SupplierDto {
     public void setTaxCode(String taxCode) { this.taxCode = taxCode; }
     public String getProductGroups() { return productGroups; }
     public void setProductGroups(String productGroups) { this.productGroups = productGroups; }
+    public BigDecimal getQualityScore() { return qualityScore; }
+    public void setQualityScore(BigDecimal qualityScore) { this.qualityScore = qualityScore; }
+    public BigDecimal getDeliveryScore() { return deliveryScore; }
+    public void setDeliveryScore(BigDecimal deliveryScore) { this.deliveryScore = deliveryScore; }
+    public BigDecimal getPriceScore() { return priceScore; }
+    public void setPriceScore(BigDecimal priceScore) { this.priceScore = priceScore; }
     public BigDecimal getRatingScore() { return ratingScore; }
     public void setRatingScore(BigDecimal ratingScore) { this.ratingScore = ratingScore; }
     public String getRatingTier() { return ratingTier; }
     public void setRatingTier(String ratingTier) { this.ratingTier = ratingTier; }
+    public LocalDate getReviewDate() { return reviewDate; }
+    public void setReviewDate(LocalDate reviewDate) { this.reviewDate = reviewDate; }
+    public String getReviewNotes() { return reviewNotes; }
+    public void setReviewNotes(String reviewNotes) { this.reviewNotes = reviewNotes; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
     public LocalDateTime getCreatedAt() { return createdAt; }

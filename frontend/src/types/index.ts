@@ -61,6 +61,10 @@ export interface Product {
   unit: string;
   standardCost: number;
   standardPrice: number;
+  wholesalePrice?: number;
+  color?: string;
+  size?: string;
+  material?: string;
   description: string;
   isActive: boolean;
   createdAt: string;
@@ -108,6 +112,7 @@ export interface Customer {
   taxCode: string;
   groupId: number;
   groupName: string;
+  discountPercent?: number;
   isActive: boolean;
   createdAt: string;
 }
@@ -243,8 +248,13 @@ export interface Supplier {
   address: string;
   taxCode: string;
   productGroups: string;
+  qualityScore?: number;
+  deliveryScore?: number;
+  priceScore?: number;
   ratingScore: number;
   ratingTier: 'A' | 'B' | 'C';
+  reviewDate?: string;
+  reviewNotes?: string;
   isActive: boolean;
   createdAt: string;
   currentDebt?: number;
@@ -308,6 +318,11 @@ export interface SupplierDebt {
   paidAmount: number;
   remainingAmount: number;
   status: 'UNPAID' | 'PARTIAL' | 'PAID';
+  paymentMethod?: string;
+  paymentReference?: string;
+  lastPaymentDate?: string;
+  paymentNotes?: string;
+  paidBy?: string;
   createdAt: string;
 }
 

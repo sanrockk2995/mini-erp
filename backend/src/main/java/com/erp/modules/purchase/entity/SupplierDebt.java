@@ -45,8 +45,20 @@ public class SupplierDebt extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private String status = "UNPAID"; // UNPAID, PARTIAL, PAID
 
-    @OneToMany(mappedBy = "debt", cascade = CascadeType.ALL)
-    private List<SupplierPayment> payments = new ArrayList<>();
+    @Column(name = "payment_method", length = 30)
+    private String paymentMethod = "BANK_TRANSFER";
+
+    @Column(name = "payment_reference", length = 100)
+    private String paymentReference;
+
+    @Column(name = "last_payment_date")
+    private LocalDate lastPaymentDate;
+
+    @Column(name = "payment_notes", length = 255)
+    private String paymentNotes;
+
+    @Column(name = "paid_by", length = 50)
+    private String paidBy;
 
     public SupplierDebt() {}
 
@@ -70,6 +82,14 @@ public class SupplierDebt extends BaseEntity {
     public void setRemainingAmount(BigDecimal remainingAmount) { this.remainingAmount = remainingAmount; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-    public List<SupplierPayment> getPayments() { return payments; }
-    public void setPayments(List<SupplierPayment> payments) { this.payments = payments; }
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public String getPaymentReference() { return paymentReference; }
+    public void setPaymentReference(String paymentReference) { this.paymentReference = paymentReference; }
+    public LocalDate getLastPaymentDate() { return lastPaymentDate; }
+    public void setLastPaymentDate(LocalDate lastPaymentDate) { this.lastPaymentDate = lastPaymentDate; }
+    public String getPaymentNotes() { return paymentNotes; }
+    public void setPaymentNotes(String paymentNotes) { this.paymentNotes = paymentNotes; }
+    public String getPaidBy() { return paidBy; }
+    public void setPaidBy(String paidBy) { this.paidBy = paidBy; }
 }

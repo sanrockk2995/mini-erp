@@ -14,7 +14,8 @@ public class CustomerDto {
     private String taxCode;
     private Long groupId;
     private String groupName;
-    private BigDecimal groupDiscountPercent;
+    private BigDecimal discountPercent = BigDecimal.ZERO;
+    private BigDecimal groupDiscountPercent = BigDecimal.ZERO;
     private Boolean isActive;
     private LocalDateTime createdAt;
 
@@ -40,8 +41,16 @@ public class CustomerDto {
     public void setGroupId(Long groupId) { this.groupId = groupId; }
     public String getGroupName() { return groupName; }
     public void setGroupName(String groupName) { this.groupName = groupName; }
+    public BigDecimal getDiscountPercent() { return discountPercent; }
+    public void setDiscountPercent(BigDecimal discountPercent) {
+        this.discountPercent = discountPercent;
+        this.groupDiscountPercent = discountPercent;
+    }
     public BigDecimal getGroupDiscountPercent() { return groupDiscountPercent; }
-    public void setGroupDiscountPercent(BigDecimal groupDiscountPercent) { this.groupDiscountPercent = groupDiscountPercent; }
+    public void setGroupDiscountPercent(BigDecimal groupDiscountPercent) {
+        this.groupDiscountPercent = groupDiscountPercent;
+        this.discountPercent = groupDiscountPercent;
+    }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
     public LocalDateTime getCreatedAt() { return createdAt; }

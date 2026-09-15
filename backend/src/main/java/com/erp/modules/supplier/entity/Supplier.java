@@ -3,8 +3,7 @@ package com.erp.modules.supplier.entity;
 import com.erp.common.BaseEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "suppliers")
@@ -35,17 +34,29 @@ public class Supplier extends BaseEntity {
     @Column(name = "product_groups", length = 255)
     private String productGroups;
 
+    @Column(name = "quality_score", nullable = false, precision = 3, scale = 1)
+    private BigDecimal qualityScore = BigDecimal.ZERO;
+
+    @Column(name = "delivery_score", nullable = false, precision = 3, scale = 1)
+    private BigDecimal deliveryScore = BigDecimal.ZERO;
+
+    @Column(name = "price_score", nullable = false, precision = 3, scale = 1)
+    private BigDecimal priceScore = BigDecimal.ZERO;
+
     @Column(name = "rating_score", nullable = false, precision = 3, scale = 1)
     private BigDecimal ratingScore = BigDecimal.ZERO;
 
     @Column(name = "rating_tier", nullable = false, length = 10)
     private String ratingTier = "B"; // A, B, C
 
+    @Column(name = "review_date")
+    private LocalDate reviewDate;
+
+    @Column(name = "review_notes", columnDefinition = "TEXT")
+    private String reviewNotes;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
-
-    @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SupplierReview> reviews = new ArrayList<>();
 
     public Supplier() {}
 
@@ -65,17 +76,20 @@ public class Supplier extends BaseEntity {
     public void setTaxCode(String taxCode) { this.taxCode = taxCode; }
     public String getProductGroups() { return productGroups; }
     public void setProductGroups(String productGroups) { this.productGroups = productGroups; }
+    public BigDecimal getQualityScore() { return qualityScore; }
+    public void setQualityScore(BigDecimal qualityScore) { this.qualityScore = qualityScore; }
+    public BigDecimal getDeliveryScore() { return deliveryScore; }
+    public void setDeliveryScore(BigDecimal deliveryScore) { this.deliveryScore = deliveryScore; }
+    public BigDecimal getPriceScore() { return priceScore; }
+    public void setPriceScore(BigDecimal priceScore) { this.priceScore = priceScore; }
     public BigDecimal getRatingScore() { return ratingScore; }
     public void setRatingScore(BigDecimal ratingScore) { this.ratingScore = ratingScore; }
     public String getRatingTier() { return ratingTier; }
     public void setRatingTier(String ratingTier) { this.ratingTier = ratingTier; }
+    public LocalDate getReviewDate() { return reviewDate; }
+    public void setReviewDate(LocalDate reviewDate) { this.reviewDate = reviewDate; }
+    public String getReviewNotes() { return reviewNotes; }
+    public void setReviewNotes(String reviewNotes) { this.reviewNotes = reviewNotes; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
-    public List<SupplierReview> getReviews() { return reviews; }
-    public void setReviews(List<SupplierReview> reviews) { this.reviews = reviews; }
-
-    public void addReview(SupplierReview review) {
-        reviews.add(review);
-        review.setSupplier(this);
-    }
 }

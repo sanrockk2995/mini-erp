@@ -7,9 +7,7 @@ import com.erp.modules.purchase.entity.SupplierDebt;
 import com.erp.modules.purchase.repository.SupplierDebtRepository;
 import com.erp.modules.supplier.dto.*;
 import com.erp.modules.supplier.entity.Supplier;
-import com.erp.modules.supplier.entity.SupplierReview;
 import com.erp.modules.supplier.repository.SupplierRepository;
-import com.erp.modules.supplier.repository.SupplierReviewRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,14 +25,11 @@ import java.util.List;
 public class SupplierService {
 
     private final SupplierRepository supplierRepository;
-    private final SupplierReviewRepository supplierReviewRepository;
     private final SupplierDebtRepository supplierDebtRepository;
 
     public SupplierService(SupplierRepository supplierRepository,
-                           SupplierReviewRepository supplierReviewRepository,
                            SupplierDebtRepository supplierDebtRepository) {
         this.supplierRepository = supplierRepository;
-        this.supplierReviewRepository = supplierReviewRepository;
         this.supplierDebtRepository = supplierDebtRepository;
     }
 
@@ -99,6 +94,9 @@ public class SupplierService {
         supplier.setTaxCode(request.getTaxCode());
         supplier.setProductGroups(request.getProductGroups());
         supplier.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
+        supplier.setQualityScore(BigDecimal.ZERO);
+        supplier.setDeliveryScore(BigDecimal.ZERO);
+        supplier.setPriceScore(BigDecimal.ZERO);
         supplier.setRatingScore(BigDecimal.ZERO);
         supplier.setRatingTier("B");
 
@@ -138,48 +136,35 @@ public class SupplierService {
                 .add(request.getPriceScore())
                 .divide(BigDecimal.valueOf(3), 1, RoundingMode.HALF_UP);
 
-        SupplierReview review = new SupplierReview();
-        review.setSupplier(supplier);
-        review.setReviewDate(request.getReviewDate() != null ? request.getReviewDate() : LocalDate.now());
-        review.setQualityScore(request.getQualityScore());
-        review.setDeliveryScore(request.getDeliveryScore());
-        review.setPriceScore(request.getPriceScore());
-        review.setAverageScore(avg);
-        review.setReviewerId(reviewerId);
-        review.setComments(request.getComments());
-
-        SupplierReview savedReview = supplierReviewRepository.save(review);
-
-        // Tính lại điểm trung bình đánh giá tổng thể của NCC
-        List<SupplierReview> allReviews = supplierReviewRepository.findBySupplierIdOrderByReviewDateDesc(supplierId);
-        BigDecimal totalScore = BigDecimal.ZERO;
-        for (SupplierReview r : allReviews) {
-            totalScore = totalScore.add(r.getAverageScore());
-        }
-        BigDecimal overallRating = totalScore.divide(BigDecimal.valueOf(allReviews.size()), 1, RoundingMode.HALF_UP);
-        supplier.setRatingScore(overallRating);
+        supplier.setQualityScore(request.getQualityScore());
+        supplier.setDeliveryScore(request.getDeliveryScore());
+        supplier.setPriceScore(request.getPriceScore());
+        supplier.setRatingScore(avg);
+        supplier.setReviewDate(request.getReviewDate() != null ? request.getReviewDate() : LocalDate.now());
+        supplier.setReviewNotes(request.getComments());
 
         // Xếp hạng: A (>= 8.5), B (>= 6.5), C (< 6.5)
-        if (overallRating.compareTo(BigDecimal.valueOf(8.5)) >= 0) {
+        if (avg.compareTo(BigDecimal.valueOf(8.5)) >= 0) {
             supplier.setRatingTier("A");
-        } else if (overallRating.compareTo(BigDecimal.valueOf(6.5)) >= 0) {
+        } else if (avg.compareTo(BigDecimal.valueOf(6.5)) >= 0) {
             supplier.setRatingTier("B");
         } else {
             supplier.setRatingTier("C");
         }
-        supplierRepository.save(supplier);
 
-        return mapToReviewDto(savedReview);
+        Supplier saved = supplierRepository.save(supplier);
+        return mapSupplierToReviewDto(saved, reviewerId);
     }
 
     @Transactional(readOnly = true)
     public List<SupplierReviewDto> getReviews(Long supplierId) {
-        List<SupplierReview> list = supplierReviewRepository.findBySupplierIdOrderByReviewDateDesc(supplierId);
-        List<SupplierReviewDto> dtos = new ArrayList<>();
-        for (SupplierReview r : list) {
-            dtos.add(mapToReviewDto(r));
+        Supplier supplier = supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new ResourceNotFoundException("Nhà cung cấp", "id", supplierId));
+
+        if (supplier.getReviewDate() == null && (supplier.getRatingScore() == null || supplier.getRatingScore().compareTo(BigDecimal.ZERO) == 0)) {
+            return List.of();
         }
-        return dtos;
+        return List.of(mapSupplierToReviewDto(supplier, null));
     }
 
     @Transactional(readOnly = true)
@@ -224,25 +209,30 @@ public class SupplierService {
         dto.setAddress(s.getAddress());
         dto.setTaxCode(s.getTaxCode());
         dto.setProductGroups(s.getProductGroups());
+        dto.setQualityScore(s.getQualityScore());
+        dto.setDeliveryScore(s.getDeliveryScore());
+        dto.setPriceScore(s.getPriceScore());
         dto.setRatingScore(s.getRatingScore());
         dto.setRatingTier(s.getRatingTier());
+        dto.setReviewDate(s.getReviewDate());
+        dto.setReviewNotes(s.getReviewNotes());
         dto.setIsActive(s.getIsActive());
         dto.setCreatedAt(s.getCreatedAt());
         return dto;
     }
 
-    private SupplierReviewDto mapToReviewDto(SupplierReview r) {
+    private SupplierReviewDto mapSupplierToReviewDto(Supplier s, Long reviewerId) {
         SupplierReviewDto dto = new SupplierReviewDto();
-        dto.setId(r.getId());
-        dto.setSupplierId(r.getSupplier().getId());
-        dto.setReviewDate(r.getReviewDate());
-        dto.setQualityScore(r.getQualityScore());
-        dto.setDeliveryScore(r.getDeliveryScore());
-        dto.setPriceScore(r.getPriceScore());
-        dto.setAverageScore(r.getAverageScore());
-        dto.setReviewerId(r.getReviewerId());
-        dto.setComments(r.getComments());
-        dto.setCreatedAt(r.getCreatedAt());
+        dto.setId(s.getId());
+        dto.setSupplierId(s.getId());
+        dto.setReviewDate(s.getReviewDate() != null ? s.getReviewDate() : (s.getUpdatedAt() != null ? s.getUpdatedAt().toLocalDate() : LocalDate.now()));
+        dto.setQualityScore(s.getQualityScore() != null ? s.getQualityScore() : BigDecimal.ZERO);
+        dto.setDeliveryScore(s.getDeliveryScore() != null ? s.getDeliveryScore() : BigDecimal.ZERO);
+        dto.setPriceScore(s.getPriceScore() != null ? s.getPriceScore() : BigDecimal.ZERO);
+        dto.setAverageScore(s.getRatingScore() != null ? s.getRatingScore() : BigDecimal.ZERO);
+        dto.setReviewerId(reviewerId);
+        dto.setComments(s.getReviewNotes());
+        dto.setCreatedAt(s.getUpdatedAt() != null ? s.getUpdatedAt() : s.getCreatedAt());
         return dto;
     }
 }

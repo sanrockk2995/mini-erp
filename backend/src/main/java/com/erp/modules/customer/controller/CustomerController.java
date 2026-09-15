@@ -29,12 +29,20 @@ public class CustomerController {
     @Operation(summary = "Tìm kiếm và phân trang khách hàng", description = "Tìm kiếm theo từ khóa (tên/mã/SĐT), lọc theo nhóm khách hàng và trạng thái")
     public ResponseEntity<ApiResponse<PageResponse<CustomerDto>>> search(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String groupName,
             @RequestParam(required = false) Long groupId,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        PageResponse<CustomerDto> result = customerService.search(keyword, groupId, isActive, page, size);
+        String filterGroup = groupName;
+        if (filterGroup == null && groupId != null) {
+            // Map legacy groupId to standard group names if applicable
+            if (groupId == 1L) filterGroup = "Khách Hàng Mua Lẻ";
+            else if (groupId == 2L) filterGroup = "Khách Hàng Thân Thiết VIP";
+            else if (groupId == 3L) filterGroup = "Khách Hàng Mua Buôn / Đại Lý";
+        }
+        PageResponse<CustomerDto> result = customerService.search(keyword, filterGroup, isActive, page, size);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 

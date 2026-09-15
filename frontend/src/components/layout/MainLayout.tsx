@@ -108,22 +108,22 @@ export const MainLayout: React.FC = () => {
     const path = location.pathname;
     const crumbs = [{ title: <Link to="/"><DashboardOutlined style={{ marginRight: 4 }} />Tổng quan</Link> }];
 
-    if (path === '/products') crumbs.push({ title: <span>Sản phẩm & Giá / Danh sách sản phẩm</span> });
-    else if (path === '/categories') crumbs.push({ title: <span>Sản phẩm & Giá / Cây danh mục</span> });
-    else if (path === '/price-lists') crumbs.push({ title: <span>Sản phẩm & Giá / Bảng giá</span> });
-    else if (path === '/customers') crumbs.push({ title: <span>Khách hàng / Danh sách khách hàng</span> });
-    else if (path === '/customer-groups') crumbs.push({ title: <span>Khách hàng / Nhóm khách hàng</span> });
-    else if (path === '/sales-orders') crumbs.push({ title: <span>Bán hàng / Đơn đặt hàng bán</span> });
-    else if (path === '/sales-orders/create') crumbs.push({ title: <span>Bán hàng / Tạo đơn bán mới</span> });
-    else if (path === '/suppliers') crumbs.push({ title: <span>Mua hàng & NCC / Nhà cung cấp</span> });
-    else if (path === '/purchase-orders') crumbs.push({ title: <span>Mua hàng & NCC / Đơn mua (PO)</span> });
-    else if (path === '/purchase-orders/create') crumbs.push({ title: <span>Mua hàng & NCC / Tạo đơn mua PO</span> });
-    else if (path === '/supplier-debts') crumbs.push({ title: <span>Mua hàng & NCC / Công nợ & Thanh toán</span> });
-    else if (path === '/inventory') crumbs.push({ title: <span>Quản lý Kho / Tồn kho & Cảnh báo</span> });
-    else if (path === '/goods-receipts') crumbs.push({ title: <span>Quản lý Kho / Nhập kho (GRN)</span> });
-    else if (path === '/goods-issues') crumbs.push({ title: <span>Quản lý Kho / Xuất kho (GIN)</span> });
-    else if (path === '/stock-ledger') crumbs.push({ title: <span>Quản lý Kho / Sổ cái biến động kho</span> });
-    else if (path === '/warehouses') crumbs.push({ title: <span>Quản lý Kho / Danh mục kho hàng</span> });
+    if (path === '/products') crumbs.push({ title: <span>1. Quản lý Bán hàng / Danh mục sản phẩm</span> });
+    else if (path === '/categories') crumbs.push({ title: <span>1. Quản lý Bán hàng / Cây danh mục</span> });
+    else if (path === '/price-lists') crumbs.push({ title: <span>1. Quản lý Bán hàng / Bảng giá</span> });
+    else if (path === '/customers') crumbs.push({ title: <span>1. Quản lý Bán hàng / Hồ sơ khách hàng</span> });
+    else if (path === '/customer-groups') crumbs.push({ title: <span>1. Quản lý Bán hàng / Nhóm khách hàng</span> });
+    else if (path === '/sales-orders') crumbs.push({ title: <span>1. Quản lý Bán hàng / Đơn đặt hàng bán</span> });
+    else if (path === '/sales-orders/create') crumbs.push({ title: <span>1. Quản lý Bán hàng / Tạo đơn bán mới</span> });
+    else if (path === '/suppliers') crumbs.push({ title: <span>2. Mua hàng & NCC / Nhà cung cấp & Đánh giá</span> });
+    else if (path === '/purchase-orders') crumbs.push({ title: <span>2. Mua hàng & NCC / Đơn mua (PO)</span> });
+    else if (path === '/purchase-orders/create') crumbs.push({ title: <span>2. Mua hàng & NCC / Tạo đơn mua PO</span> });
+    else if (path === '/supplier-debts') crumbs.push({ title: <span>2. Mua hàng & NCC / Công nợ NCC & Thanh toán</span> });
+    else if (path === '/inventory') crumbs.push({ title: <span>3. Quản lý Kho / Tổng hợp tồn & Cảnh báo</span> });
+    else if (path === '/goods-receipts') crumbs.push({ title: <span>3. Quản lý Kho / Phiếu nhập kho (GRN)</span> });
+    else if (path === '/goods-issues') crumbs.push({ title: <span>3. Quản lý Kho / Phiếu xuất kho (GIN)</span> });
+    else if (path === '/stock-ledger') crumbs.push({ title: <span>3. Quản lý Kho / Sổ cái biến động kho</span> });
+    else if (path === '/warehouses') crumbs.push({ title: <span>3. Quản lý Kho / Danh mục kho hàng</span> });
 
     return crumbs;
   };
@@ -131,21 +131,22 @@ export const MainLayout: React.FC = () => {
   // Command palette navigation items
   const commandItems = useMemo(
     () => [
-      { key: '/sales-orders/create', title: 'Tạo đơn đặt hàng bán mới (SO)', category: 'Bán hàng', icon: <ShoppingCartOutlined /> },
-      { key: '/sales-orders', title: 'Danh sách đơn bán hàng', category: 'Bán hàng', icon: <FileDoneOutlined /> },
-      { key: '/purchase-orders/create', title: 'Lập đơn mua hàng mới (PO)', category: 'Mua hàng', icon: <ShopOutlined /> },
-      { key: '/purchase-orders', title: 'Danh sách đơn mua hàng', category: 'Mua hàng', icon: <FileDoneOutlined /> },
-      { key: '/supplier-debts', title: 'Quản lý công nợ & Thanh toán NCC', category: 'Mua hàng', icon: <CreditCardOutlined /> },
-      { key: '/goods-receipts', title: 'Phiếu nhập kho hàng hóa (GRN)', category: 'Kho vận', icon: <ImportOutlined /> },
-      { key: '/goods-issues', title: 'Phiếu xuất kho giao hàng (GIN)', category: 'Kho vận', icon: <ExportOutlined /> },
-      { key: '/inventory', title: 'Xem tồn kho & Cảnh báo định mức', category: 'Kho vận', icon: <InboxOutlined /> },
-      { key: '/stock-ledger', title: 'Sổ cái biến động kho bất biến', category: 'Kho vận', icon: <AuditOutlined /> },
-      { key: '/products', title: 'Danh sách sản phẩm & Tồn', category: 'Sản phẩm', icon: <ShoppingOutlined /> },
-      { key: '/categories', title: 'Cây danh mục ngành hàng', category: 'Sản phẩm', icon: <AppstoreOutlined /> },
-      { key: '/price-lists', title: 'Bảng giá bán lẻ & Đại lý', category: 'Sản phẩm', icon: <DollarOutlined /> },
-      { key: '/customers', title: 'Danh sách đối tác khách hàng', category: 'Khách hàng', icon: <TeamOutlined /> },
-      { key: '/suppliers', title: 'Danh sách nhà cung cấp & Đánh giá', category: 'Mua hàng', icon: <ShopOutlined /> },
-      { key: '/warehouses', title: 'Danh mục kho hàng', category: 'Kho vận', icon: <HomeOutlined /> },
+      { key: '/sales-orders/create', title: 'Tạo đơn đặt hàng bán mới (SO)', category: '1. Quản lý Bán hàng', icon: <ShoppingCartOutlined /> },
+      { key: '/sales-orders', title: 'Danh sách đơn bán hàng (SO)', category: '1. Quản lý Bán hàng', icon: <FileDoneOutlined /> },
+      { key: '/customers', title: 'Danh sách đối tác khách hàng', category: '1. Quản lý Bán hàng', icon: <TeamOutlined /> },
+      { key: '/customer-groups', title: 'Phân loại nhóm khách hàng', category: '1. Quản lý Bán hàng', icon: <UsergroupAddOutlined /> },
+      { key: '/products', title: 'Danh mục sản phẩm & Tồn', category: '1. Quản lý Bán hàng', icon: <ShoppingOutlined /> },
+      { key: '/categories', title: 'Cây danh mục ngành hàng', category: '1. Quản lý Bán hàng', icon: <AppstoreOutlined /> },
+      { key: '/price-lists', title: 'Bảng giá bán buôn & bán lẻ', category: '1. Quản lý Bán hàng', icon: <DollarOutlined /> },
+      { key: '/purchase-orders/create', title: 'Lập đơn mua hàng mới (PO)', category: '2. Mua hàng & NCC', icon: <ShopOutlined /> },
+      { key: '/purchase-orders', title: 'Danh sách đơn mua hàng (PO)', category: '2. Mua hàng & NCC', icon: <FileDoneOutlined /> },
+      { key: '/suppliers', title: 'Danh sách nhà cung cấp & Đánh giá', category: '2. Mua hàng & NCC', icon: <ShopOutlined /> },
+      { key: '/supplier-debts', title: 'Quản lý công nợ NCC & Thanh toán', category: '2. Mua hàng & NCC', icon: <CreditCardOutlined /> },
+      { key: '/inventory', title: 'Xem tồn kho & Cảnh báo định mức', category: '3. Quản lý Kho', icon: <InboxOutlined /> },
+      { key: '/goods-receipts', title: 'Phiếu nhập kho hàng hóa (GRN)', category: '3. Quản lý Kho', icon: <ImportOutlined /> },
+      { key: '/goods-issues', title: 'Phiếu xuất kho giao hàng (GIN)', category: '3. Quản lý Kho', icon: <ExportOutlined /> },
+      { key: '/stock-ledger', title: 'Sổ cái biến động kho bất biến', category: '3. Quản lý Kho', icon: <AuditOutlined /> },
+      { key: '/warehouses', title: 'Danh mục kho hàng', category: '3. Quản lý Kho', icon: <HomeOutlined /> },
     ],
     []
   );
@@ -311,65 +312,128 @@ export const MainLayout: React.FC = () => {
       label: 'Bàn làm việc (Dashboard)',
     },
     {
-      key: 'sub-product',
-      icon: <ShoppingOutlined style={{ fontSize: 15 }} />,
-      label: 'Sản phẩm & Bảng giá',
-      children: [
-        { key: '/products', icon: <ShoppingOutlined />, label: 'Danh sách sản phẩm' },
-        { key: '/categories', icon: <AppstoreOutlined />, label: 'Cây danh mục ngành hàng' },
-        { key: '/price-lists', icon: <DollarOutlined />, label: 'Bảng giá bán lẻ & buôn' },
-      ],
-    },
-    {
-      key: 'sub-customer',
-      icon: <TeamOutlined style={{ fontSize: 15 }} />,
-      label: 'Đối tác Khách hàng',
-      children: [
-        { key: '/customers', icon: <TeamOutlined />, label: 'Danh sách khách hàng' },
-        { key: '/customer-groups', icon: <UsergroupAddOutlined />, label: 'Nhóm khách hàng' },
-      ],
-    },
-    {
-      key: 'sub-sales',
+      key: 'module-sales',
       icon: <ShoppingCartOutlined style={{ fontSize: 15 }} />,
-      label: 'Phân hệ Bán hàng',
+      label: '1. Quản lý Bán hàng',
       children: [
-        { key: '/sales-orders', icon: <ShoppingCartOutlined />, label: 'Đơn đặt hàng bán (SO)' },
-        { key: '/sales-orders/create', icon: <FileDoneOutlined />, label: 'Tạo đơn bán mới' },
+        {
+          key: 'grp-so',
+          type: 'group',
+          label: 'ĐƠN HÀNG BÁN (SO)',
+          children: [
+            { key: '/sales-orders', icon: <FileDoneOutlined />, label: 'Danh sách đơn bán' },
+            { key: '/sales-orders/create', icon: <PlusOutlined />, label: 'Tạo đơn bán mới' },
+          ],
+        },
+        {
+          key: 'grp-customers',
+          type: 'group',
+          label: 'KHÁCH HÀNG',
+          children: [
+            { key: '/customers', icon: <TeamOutlined />, label: 'Hồ sơ khách hàng' },
+            { key: '/customer-groups', icon: <UsergroupAddOutlined />, label: 'Phân loại nhóm KH' },
+          ],
+        },
+        {
+          key: 'grp-products',
+          type: 'group',
+          label: 'SẢN PHẨM & BẢNG GIÁ',
+          children: [
+            { key: '/products', icon: <ShoppingOutlined />, label: 'Danh mục sản phẩm' },
+            { key: '/categories', icon: <AppstoreOutlined />, label: 'Cây danh mục ngành hàng' },
+            { key: '/price-lists', icon: <DollarOutlined />, label: 'Bảng giá bán buôn & lẻ' },
+          ],
+        },
       ],
     },
     {
-      key: 'sub-purchasing',
+      key: 'module-purchasing',
       icon: <ShopOutlined style={{ fontSize: 15 }} />,
-      label: 'Mua hàng & Nhà cung cấp',
+      label: '2. Mua hàng & NCC',
       children: [
-        { key: '/suppliers', icon: <ShopOutlined />, label: 'Nhà cung cấp & Đánh giá' },
-        { key: '/purchase-orders', icon: <FileDoneOutlined />, label: 'Đơn mua hàng (PO)' },
-        { key: '/purchase-orders/create', icon: <FileDoneOutlined />, label: 'Tạo đơn mua PO' },
-        { key: '/supplier-debts', icon: <CreditCardOutlined />, label: 'Công nợ & Thanh toán NCC' },
+        {
+          key: 'grp-po',
+          type: 'group',
+          label: 'ĐƠN MUA HÀNG (PO)',
+          children: [
+            { key: '/purchase-orders', icon: <FileDoneOutlined />, label: 'Danh sách đơn mua' },
+            { key: '/purchase-orders/create', icon: <PlusOutlined />, label: 'Tạo đơn mua PO' },
+          ],
+        },
+        {
+          key: 'grp-suppliers',
+          type: 'group',
+          label: 'NHÀ CUNG CẤP',
+          children: [
+            { key: '/suppliers', icon: <ShopOutlined />, label: 'Danh sách & Đánh giá NCC' },
+          ],
+        },
+        {
+          key: 'grp-debt',
+          type: 'group',
+          label: 'CÔNG NỢ PHẢI TRẢ',
+          children: [
+            { key: '/supplier-debts', icon: <CreditCardOutlined />, label: 'Công nợ NCC & Thanh toán' },
+          ],
+        },
       ],
     },
     {
-      key: 'sub-warehouse',
+      key: 'module-warehouse',
       icon: <InboxOutlined style={{ fontSize: 15 }} />,
-      label: 'Kho vận Double-Entry',
+      label: '3. Quản lý Kho hàng',
       children: [
-        { key: '/inventory', icon: <InboxOutlined />, label: 'Tổng hợp tồn kho & Cảnh báo' },
-        { key: '/goods-receipts', icon: <ImportOutlined />, label: 'Phiếu nhập kho (GRN)' },
-        { key: '/goods-issues', icon: <ExportOutlined />, label: 'Phiếu xuất kho (GIN)' },
-        { key: '/stock-ledger', icon: <AuditOutlined />, label: 'Sổ cái biến động kho' },
-        { key: '/warehouses', icon: <HomeOutlined />, label: 'Danh mục kho hàng' },
+        {
+          key: 'grp-inventory',
+          type: 'group',
+          label: 'TỒN KHO & ĐỊNH MỨC',
+          children: [
+            { key: '/inventory', icon: <InboxOutlined />, label: 'Tổng hợp tồn & Cảnh báo' },
+            { key: '/warehouses', icon: <HomeOutlined />, label: 'Danh mục kho hàng' },
+          ],
+        },
+        {
+          key: 'grp-wh-ops',
+          type: 'group',
+          label: 'GIAO DỊCH KHO',
+          children: [
+            { key: '/goods-receipts', icon: <ImportOutlined />, label: 'Phiếu nhập kho (GRN)' },
+            { key: '/goods-issues', icon: <ExportOutlined />, label: 'Phiếu xuất kho (GIN)' },
+            { key: '/stock-ledger', icon: <AuditOutlined />, label: 'Sổ cái biến động kho' },
+          ],
+        },
       ],
     },
   ];
 
   const getOpenKeys = () => {
     const path = location.pathname;
-    if (path.startsWith('/products') || path.startsWith('/categories') || path.startsWith('/price-lists')) return ['sub-product'];
-    if (path.startsWith('/customers') || path.startsWith('/customer-groups')) return ['sub-customer'];
-    if (path.startsWith('/sales-orders')) return ['sub-sales'];
-    if (path.startsWith('/suppliers') || path.startsWith('/purchase-orders') || path.startsWith('/supplier-debts')) return ['sub-purchasing'];
-    if (path.startsWith('/inventory') || path.startsWith('/goods-receipts') || path.startsWith('/goods-issues') || path.startsWith('/stock-ledger') || path.startsWith('/warehouses')) return ['sub-warehouse'];
+    if (
+      path.startsWith('/sales-orders') ||
+      path.startsWith('/customers') ||
+      path.startsWith('/customer-groups') ||
+      path.startsWith('/products') ||
+      path.startsWith('/categories') ||
+      path.startsWith('/price-lists')
+    ) {
+      return ['module-sales'];
+    }
+    if (
+      path.startsWith('/purchase-orders') ||
+      path.startsWith('/suppliers') ||
+      path.startsWith('/supplier-debts')
+    ) {
+      return ['module-purchasing'];
+    }
+    if (
+      path.startsWith('/inventory') ||
+      path.startsWith('/goods-receipts') ||
+      path.startsWith('/goods-issues') ||
+      path.startsWith('/stock-ledger') ||
+      path.startsWith('/warehouses')
+    ) {
+      return ['module-warehouse'];
+    }
     return [];
   };
 
@@ -424,8 +488,8 @@ export const MainLayout: React.FC = () => {
             height: 64,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: collapsed && !isMobile ? '0 14px' : '0 16px',
+            justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+            padding: collapsed && !isMobile ? '0' : '0 18px',
             backgroundColor: 'var(--color-sider-header)',
             borderBottom: '1px solid var(--color-sider-border)',
             overflow: 'hidden',
@@ -433,30 +497,39 @@ export const MainLayout: React.FC = () => {
           }}
         >
           <div
-            style={{ display: 'flex', alignItems: 'center', minWidth: 0, cursor: collapsed ? 'pointer' : 'default' }}
-            onClick={() => collapsed && setCollapsed(false)}
-            title={collapsed ? 'Nhấp để mở rộng menu' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              minWidth: 0,
+              cursor: 'pointer',
+              userSelect: 'none',
+              width: '100%',
+              justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+            }}
+            onClick={() => (collapsed ? setCollapsed(false) : navigate('/'))}
+            title={collapsed ? 'Nhấp để mở rộng menu' : 'Về trang chủ Dashboard'}
           >
             <div
               style={{
-                width: 34,
-                height: 34,
-                borderRadius: 'var(--radius-xs)',
+                width: 36,
+                height: 36,
+                borderRadius: '8px',
                 background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#FFFFFF',
-                fontSize: 17,
-                marginRight: collapsed && !isMobile ? 0 : 10,
+                fontSize: 18,
+                marginRight: collapsed && !isMobile ? 0 : 12,
                 flexShrink: 0,
                 boxShadow: '0 2px 8px rgba(5, 150, 105, 0.4)',
+                transition: 'all 0.2s ease',
               }}
             >
               <ThunderboltFilled />
             </div>
             {!collapsed && (
-              <div style={{ overflow: 'hidden' }}>
+              <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span
                     style={{
@@ -465,6 +538,7 @@ export const MainLayout: React.FC = () => {
                       fontWeight: 700,
                       fontSize: 16,
                       letterSpacing: '-0.02em',
+                      lineHeight: 1.2,
                     }}
                   >
                     MINI-ERP
@@ -475,32 +549,31 @@ export const MainLayout: React.FC = () => {
                       backgroundColor: 'rgba(5, 150, 105, 0.2)',
                       color: '#34D399',
                       fontSize: 9.5,
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      fontWeight: 600,
                       border: '1px solid rgba(5, 150, 105, 0.4)',
+                      lineHeight: 1.2,
                     }}
                   >
                     SYS·LIVE
                   </span>
                 </div>
-                <div style={{ color: 'var(--color-ink-muted)', fontSize: 11, fontWeight: 500 }}>
+                <div
+                  style={{
+                    color: 'var(--color-ink-muted)',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    lineHeight: 1.2,
+                    marginTop: 3,
+                    letterSpacing: '0.01em',
+                  }}
+                >
                   Enterprise Platform v1.0
                 </div>
               </div>
             )}
           </div>
-          {!collapsed && (
-            <Tooltip title="Thu gọn menu">
-              <Button
-                type="text"
-                size="small"
-                icon={<MenuFoldOutlined style={{ color: '#94A3B8', fontSize: 14 }} />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCollapsed(true);
-                }}
-                style={{ width: 28, height: 28 }}
-              />
-            </Tooltip>
-          )}
         </div>
 
         {/* Navigation Menu */}
@@ -515,53 +588,10 @@ export const MainLayout: React.FC = () => {
             backgroundColor: 'var(--color-sider-bg)',
             borderRight: 'none',
             fontSize: 13,
-            padding: '12px 6px',
+            padding: '12px 6px 24px 6px',
             fontWeight: 500,
-            marginBottom: 60,
           }}
         />
-
-        {/* Sider Footer: Live DB Telemetry */}
-        {!collapsed ? (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: '12px 16px',
-              borderTop: '1px solid var(--color-sider-border)',
-              backgroundColor: 'var(--color-sider-header)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="pulsing-dot" />
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#E2E8F0', fontFamily: 'var(--font-mono)' }}>
-                  MySQL 8.0 Connected
-                </div>
-                <div style={{ fontSize: 10, color: 'var(--color-ink-muted)', fontFamily: 'var(--font-mono)' }}>
-                  10.216.1.218:3306 • erp_db
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : !isMobile ? (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 14,
-              left: 0,
-              right: 0,
-              display: 'flex',
-              justifyContent: 'center',
-            }}
-          >
-            <Tooltip title="MySQL 8.0 Connected • 10.216.1.218:3306" placement="right">
-              <span className="pulsing-dot" style={{ cursor: 'pointer' }} />
-            </Tooltip>
-          </div>
-        ) : null}
       </Sider>
 
       {/* Main Content Area */}

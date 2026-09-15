@@ -39,6 +39,14 @@ print_banner() {
 
 # Tự động dò tìm môi trường Java, Maven, Node.js
 setup_environment() {
+  # 0. Nạp biến môi trường từ .env nếu có
+  if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$SCRIPT_DIR/.env"
+    set +a
+  fi
+
   # 1. Dò tìm Java
   if ! command -v java &> /dev/null; then
     local JAVA_CANDIDATES=(
@@ -166,6 +174,17 @@ stop_running_processes() {
       if [ -n "$p" ]; then
         kill -9 $p 2>/dev/null || true
       fi
+    done
+  else
+    # Môi trường Windows / Git Bash
+    for port in 7070 8080 3000 5173; do
+      local win_pids
+      win_pids=$(netstat -ano 2>/dev/null | grep -E "[:.]$port[[:space:]]+.*LISTENING" | awk '{print $5}' | sort -u || true)
+      for wp in $win_pids; do
+        if [ -n "$wp" ] && [ "$wp" -ne 0 ] 2>/dev/null; then
+          taskkill //F //PID "$wp" 2>/dev/null || true
+        fi
+      done
     done
   fi
 }

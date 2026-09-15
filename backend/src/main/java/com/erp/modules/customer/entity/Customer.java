@@ -2,6 +2,7 @@ package com.erp.modules.customer.entity;
 
 import com.erp.common.BaseEntity;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "customers")
@@ -32,9 +33,11 @@ public class Customer extends BaseEntity {
     @Column(name = "tax_code", length = 50)
     private String taxCode;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id")
-    private CustomerGroup group;
+    @Column(name = "group_name", length = 100)
+    private String groupName = "Khách Hàng Mua Lẻ";
+
+    @Column(name = "discount_percent", nullable = false, precision = 5, scale = 2)
+    private BigDecimal discountPercent = BigDecimal.ZERO;
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
@@ -57,8 +60,10 @@ public class Customer extends BaseEntity {
     public void setAddress(String address) { this.address = address; }
     public String getTaxCode() { return taxCode; }
     public void setTaxCode(String taxCode) { this.taxCode = taxCode; }
-    public CustomerGroup getGroup() { return group; }
-    public void setGroup(CustomerGroup group) { this.group = group; }
+    public String getGroupName() { return groupName; }
+    public void setGroupName(String groupName) { this.groupName = groupName; }
+    public BigDecimal getDiscountPercent() { return discountPercent; }
+    public void setDiscountPercent(BigDecimal discountPercent) { this.discountPercent = discountPercent; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 }
