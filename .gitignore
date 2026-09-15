@@ -34,3 +34,4 @@ yarn-error.log*
 .env.local
 *.log
 .erp_running_pids
+database/backup_*.sql
